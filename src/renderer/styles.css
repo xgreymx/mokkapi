@@ -1,0 +1,160 @@
+@import "tailwindcss";
+
+/* ─── Dark mode variant (class strategy) ─────────────────────────────────── */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ─── Design tokens exposed as Tailwind theme utilities ──────────────────── */
+@theme {
+  --color-border:            rgb(var(--border) / <alpha-value>);
+  --color-background:        rgb(var(--bg) / <alpha-value>);
+  --color-foreground:        rgb(var(--text) / <alpha-value>);
+  --color-muted:             rgb(var(--bg-elevated) / <alpha-value>);
+  --color-muted-foreground:  rgb(var(--text-muted) / <alpha-value>);
+  --color-primary:           rgb(var(--primary) / <alpha-value>);
+  --color-primary-foreground:rgb(var(--primary-fg) / <alpha-value>);
+
+  --font-family-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+
+  --radius: 6px;
+}
+
+/* ─── Design token layer ─────────────────────────────────────────────────── */
+@layer base {
+  /*
+   * Light theme — editorial minimalism.
+   * Surface hierarchy: bg (page) → bg-elevated (panels/cards) → bg-overlay (popovers)
+   */
+  :root {
+    --bg:           249 249 248;   /* stone-50 */
+    --bg-elevated:  255 255 255;
+    --bg-overlay:   255 255 255;
+    --border:       231 229 228;   /* stone-200 */
+    --border-focus: 99  102 241;   /* indigo-500 */
+
+    --text:         10  10  10;
+    --text-muted:   82  82  91;    /* zinc-600 */
+    --text-xmuted:  161 161 170;   /* zinc-400 */
+
+    --primary:      79  70  229;   /* indigo-600 */
+    --primary-fg:   255 255 255;
+
+    /* Status / semantic */
+    --status-2xx:   22  163 74;    /* emerald-600 */
+    --status-3xx:   2   132 199;   /* sky-600 */
+    --status-4xx:   217 119 6;     /* amber-600 */
+    --status-5xx:   220 38  38;    /* rose-600 */
+
+    /* Method badge colours (constant across themes) */
+    --method-get:     37  99  235;   /* blue-600 */
+    --method-post:    22  163 74;    /* green-600 */
+    --method-put:     217 119 6;     /* amber-600 */
+    --method-patch:   147 51  234;   /* purple-600 */
+    --method-delete:  220 38  38;    /* red-600 */
+    --method-head:    71  85  105;   /* slate-600 */
+    --method-options: 71  85  105;
+
+    --rail-width: 52px;
+    --topbar-height: 48px;
+  }
+
+  /* Dark theme — same hierarchy, inverted surfaces */
+  .dark {
+    --bg:           11  11  12;
+    --bg-elevated:  20  20  22;
+    --bg-overlay:   24  24  27;
+    --border:       39  39  42;    /* zinc-800 */
+
+    --text:         250 250 250;
+    --text-muted:   161 161 170;   /* zinc-400 */
+    --text-xmuted:  82  82  91;    /* zinc-600 */
+
+    --primary:      129 140 248;   /* indigo-400 */
+    --primary-fg:   17  24  39;    /* gray-900 */
+
+    --status-2xx:   52  211 153;   /* emerald-400 */
+    --status-3xx:   56  189 248;   /* sky-400 */
+    --status-4xx:   251 191 36;    /* amber-400 */
+    --status-5xx:   251 113 133;   /* rose-400 */
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html, body {
+    @apply bg-[rgb(var(--bg))] text-[rgb(var(--text))];
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    height: 100%;
+    overflow: hidden; /* Electron: prevent outer scroll */
+  }
+
+  code, pre, .mono {
+    font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  }
+}
+
+/* ─── Utility classes built on design tokens ──────────────────────────────── */
+@layer components {
+  /* Surface panels */
+  .surface      { background-color: rgb(var(--bg)); }
+  .surface-el   { background-color: rgb(var(--bg-elevated)); }
+  .surface-ov   { background-color: rgb(var(--bg-overlay)); }
+
+  /* Status-coded text */
+  .text-2xx  { color: rgb(var(--status-2xx)); }
+  .text-3xx  { color: rgb(var(--status-3xx)); }
+  .text-4xx  { color: rgb(var(--status-4xx)); }
+  .text-5xx  { color: rgb(var(--status-5xx)); }
+
+  /* Method badges */
+  .badge-method {
+    @apply inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[10px] font-semibold font-mono uppercase tracking-wider;
+    min-width: 54px;
+  }
+  .badge-get     { background-color: rgb(var(--method-get) / 0.12);     color: rgb(var(--method-get)); }
+  .badge-post    { background-color: rgb(var(--method-post) / 0.12);    color: rgb(var(--method-post)); }
+  .badge-put     { background-color: rgb(var(--method-put) / 0.12);     color: rgb(var(--method-put)); }
+  .badge-patch   { background-color: rgb(var(--method-patch) / 0.12);   color: rgb(var(--method-patch)); }
+  .badge-delete  { background-color: rgb(var(--method-delete) / 0.12);  color: rgb(var(--method-delete)); }
+  .badge-head    { background-color: rgb(var(--method-head) / 0.12);    color: rgb(var(--method-head)); }
+  .badge-options { background-color: rgb(var(--method-options) / 0.12); color: rgb(var(--method-options)); }
+
+  /* Status dot indicator (service running/stopped) */
+  .dot-running { @apply w-2 h-2 rounded-full bg-[rgb(var(--status-2xx))]; }
+  .dot-stopped { @apply w-2 h-2 rounded-full bg-[rgb(var(--text-xmuted))]; }
+  .dot-error   { @apply w-2 h-2 rounded-full bg-[rgb(var(--status-5xx))]; }
+  .dot-starting {
+    @apply w-2 h-2 rounded-full bg-[rgb(var(--status-4xx))];
+    animation: pulse 1s cubic-bezier(0.4,0,0.6,1) infinite;
+  }
+
+  /* Rail nav button */
+  .rail-btn {
+    @apply flex items-center justify-center w-10 h-10 rounded-lg
+           text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text))]
+           hover:bg-[rgb(var(--bg-elevated))]
+           transition-colors duration-150 cursor-pointer;
+  }
+  .rail-btn.active {
+    @apply bg-[rgb(var(--bg-elevated))] text-[rgb(var(--primary))];
+  }
+
+  /* Thin scrollbar */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--border)) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar { width: 5px; height: 5px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgb(var(--border));
+    border-radius: 9999px;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}

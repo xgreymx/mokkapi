@@ -1,0 +1,46 @@
+appId: com.mokkapi.app
+productName: mokkapi
+copyright: Copyright © 2026
+
+directories:
+  buildResources: build
+  output: dist
+
+files:
+  - out/**/*
+  - package.json
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  executableName: mokkapi
+  icon: build/icon.ico
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+
+mac:
+  target:
+    - target: dmg
+      arch: [universal]
+  icon: build/icon.icns
+  category: public.app-category.developer-tools
+
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+    - target: deb
+      arch: [x64]
+  icon: build/icons
+  category: Development
+  maintainer: mokkapi
+
+# No native modules in use — SQLite ships with Node/Electron via node:sqlite
+npmRebuild: false
+
+publish:
+  provider: github
+  releaseType: release

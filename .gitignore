@@ -1,0 +1,33 @@
+# Build outputs
+out/
+dist/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Workspace data (user-specific)
+# Commit your workspace JSON configs if you want, but exclude history and certs
+*.sqlite
+*.sqlite-journal
+**/certs/*.key
+**/certs/*.crt
+
+# Electron
+.DS_Store
+*.pem
+
+# IDEs
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# OS
+Thumbs.db
+
+.claude
