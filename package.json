@@ -1,6 +1,7 @@
 {
   "name": "mokkapi",
   "version": "0.1.2",
+  "author": {"name": "xgreymx"},
   "description": "Local-first Mock API workbench — stand in for external HTTP services",
   "private": true,
   "main": "out/main/index.js",

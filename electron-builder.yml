@@ -14,6 +14,8 @@ win:
   target:
     - target: nsis
       arch: [x64]
+    - target: portable
+      arch: [x64]
   executableName: mokkapi
   icon: build/icon.ico
 
@@ -43,4 +45,4 @@ npmRebuild: false
 
 publish:
   provider: github
-  releaseType: release
+  releaseType: draft
