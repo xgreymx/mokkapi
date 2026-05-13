@@ -7,6 +7,10 @@ import { z } from 'zod';
 
 const HttpMethodSchema = z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']);
 const BodyKindSchema = z.enum(['json', 'xml', 'text', 'binary-base64']);
+const PersistedBodyKindSchema = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  BodyKindSchema.default('json'),
+);
 const MatchOpSchema = z.enum(['eq', 'exists', 'regex', 'gt', 'lt']);
 
 const MatchRuleValueSchema = z.union([
@@ -35,7 +39,7 @@ export const ResponseVariantSchema = z.object({
   status: z.number().int().min(100).max(599).default(200),
   headers: z.record(z.string(), z.string()).default({}),
   body: z.string().default(''),
-  bodyKind: BodyKindSchema.default('json'),
+  bodyKind: PersistedBodyKindSchema,
   synthesized: z.boolean().optional(),
 });
 

@@ -25,7 +25,7 @@ interface HeaderRow { key: string; value: string; enabled: boolean; }
     <div class="flex flex-col h-full overflow-hidden">
 
       <!-- Request input area -->
-      <div class="flex flex-col gap-3 p-4 border-b border-[rgb(var(--border))] surface-el flex-shrink-0">
+      <div class="flex flex-col gap-3 p-4 border-b border-[rgb(var(--border))] surface-el shrink-0">
 
         <!-- Method + URL + Send -->
         <div class="flex items-center gap-2">
@@ -55,7 +55,7 @@ interface HeaderRow { key: string; value: string; enabled: boolean; }
 
         <!-- Tabs: Headers / Body -->
         <div class="flex gap-4 text-xs">
-          @for (tab of ['Headers', 'Body'] as const; track tab) {
+          @for (tab of tabs; track tab) {
             <button (click)="activeTab.set(tab)"
                     class="pb-1 font-medium transition-colors"
                     [class]="activeTab() === tab
@@ -148,7 +148,7 @@ interface HeaderRow { key: string; value: string; enabled: boolean; }
                 <div class="mt-1.5 rounded border border-[rgb(var(--border))] overflow-hidden">
                   @for (entry of objectEntries(res.headers); track entry[0]) {
                     <div class="flex gap-2 px-3 py-1.5 border-b border-[rgb(var(--border)/0.5)] last:border-0">
-                      <span class="font-mono text-[rgb(var(--text-muted))] flex-shrink-0">{{ entry[0] }}</span>
+                      <span class="font-mono text-[rgb(var(--text-muted))] shrink-0">{{ entry[0] }}</span>
                       <span class="font-mono text-[rgb(var(--text))] truncate">{{ entry[1] }}</span>
                     </div>
                   }
@@ -178,6 +178,7 @@ export class TestClientPageComponent {
   protected url = '';
   protected body = '';
   protected readonly methods: HttpMethod[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
+  protected readonly tabs = ['Headers', 'Body'] as const;
   protected readonly activeTab = signal<'Headers' | 'Body'>('Headers');
   protected readonly headers = signal<HeaderRow[]>([
     { key: 'Content-Type', value: 'application/json', enabled: true },

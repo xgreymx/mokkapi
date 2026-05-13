@@ -135,31 +135,31 @@ export class AppComponent implements OnDestroy {
 
   protected readonly navItems: NavItem[] = [
     {
-      path: 'services',
+      path: '/services',
       label: 'Services',
       // Layers icon
       icon: 'M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5',
     },
     {
-      path: 'history',
+      path: '/history',
       label: 'Request Inspector',
       // List / activity icon
       icon: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
     },
     {
-      path: 'test-client',
+      path: '/test-client',
       label: 'Test Client',
       // Send icon
       icon: 'M22 2 11 13M22 2 15 22 11 13 2 9l20-7z',
     },
     {
-      path: 'imports',
+      path: '/imports',
       label: 'Import OpenAPI',
       // Upload cloud icon
       icon: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12',
     },
     {
-      path: 'settings',
+      path: '/settings',
       label: 'Settings',
       // Sliders icon
       icon: 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6',

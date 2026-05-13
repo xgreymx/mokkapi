@@ -43,7 +43,13 @@ export class ServiceHost {
 
     this.status = { serviceId: this._service.id, status: 'starting' };
 
-    const app = Fastify({ logger: false, ignoreTrailingSlash: true });
+    const app = Fastify({
+      logger: false,
+      routerOptions: {
+        ignoreTrailingSlash: true,
+      },
+      exposeHeadRoutes: false,
+    });
 
     // Accept any content-type as a raw string so we can inspect and log it
     app.addContentTypeParser('*', { parseAs: 'string' }, (_req, body, done) => {
@@ -63,27 +69,20 @@ export class ServiceHost {
       const startMs = Date.now();
 
       // ── Normalise incoming request ────────────────────────────────────────
-      const rawBody = req.body as string | undefined;
-
       const headers: Record<string, string> = {};
       for (const [k, v] of Object.entries(req.headers)) {
         if (v) headers[k.toLowerCase()] = Array.isArray(v) ? v.join(', ') : v;
       }
 
+      const { rawBody, parsedBody } = normalizeRequestBody(
+        req.body,
+        headers['content-type'] ?? '',
+      );
+
       const query: Record<string, string> = {};
       if (req.query && typeof req.query === 'object') {
         for (const [k, v] of Object.entries(req.query as Record<string, string | string[]>)) {
           query[k] = Array.isArray(v) ? v[0] : v;
-        }
-      }
-
-      let parsedBody: unknown = null;
-      if (rawBody) {
-        const ct = headers['content-type'] ?? '';
-        if (ct.includes('application/json')) {
-          try { parsedBody = JSON.parse(rawBody); } catch { parsedBody = rawBody; }
-        } else {
-          parsedBody = rawBody;
         }
       }
 
@@ -199,4 +198,51 @@ export class ServiceHost {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+function normalizeRequestBody(
+  body: unknown,
+  contentType: string,
+): { rawBody: string | null; parsedBody: unknown } {
+  if (body === undefined || body === null || body === '') {
+    return { rawBody: null, parsedBody: null };
+  }
+
+  if (typeof body === 'string') {
+    return normalizeTextBody(body, contentType);
+  }
+
+  if (body instanceof Uint8Array) {
+    return normalizeTextBody(Buffer.from(body).toString('utf8'), contentType);
+  }
+
+  if (typeof body === 'object') {
+    const rawBody = safeStringify(body);
+    return { rawBody, parsedBody: body };
+  }
+
+  return { rawBody: String(body), parsedBody: body };
+}
+
+function normalizeTextBody(
+  text: string,
+  contentType: string,
+): { rawBody: string; parsedBody: unknown } {
+  if (contentType.includes('application/json') || contentType.includes('+json')) {
+    try {
+      return { rawBody: text, parsedBody: JSON.parse(text) };
+    } catch {
+      return { rawBody: text, parsedBody: text };
+    }
+  }
+
+  return { rawBody: text, parsedBody: text };
+}
+
+function safeStringify(value: unknown): string {
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
 }

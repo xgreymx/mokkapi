@@ -17,6 +17,7 @@ export class WorkspaceManager {
   private settings!: AppSettings;
   private watcher: FSWatcher | null = null;
   private readonly changeListeners: ServiceChangeCallback[] = [];
+  private readonly suppressedWatcherFiles = new Map<string, number>();
 
   constructor(workspacePath?: string) {
     this.workspacePath = workspacePath ?? DEFAULT_WORKSPACE_PATH;
@@ -106,9 +107,13 @@ export class WorkspaceManager {
     }
   }
 
-  private async persistService(service: Service): Promise<void> {
+  private async persistService(service: Service, suppressWatcher = false): Promise<void> {
+    const filePath = join(this.workspacePath, 'services', `${service.id}.json`);
+    if (suppressWatcher) {
+      this.suppressedWatcherFiles.set(filePath, Date.now() + 2_000);
+    }
     await writeFile(
-      join(this.workspacePath, 'services', `${service.id}.json`),
+      filePath,
       JSON.stringify(service, null, 2),
       'utf-8',
     );
@@ -123,6 +128,7 @@ export class WorkspaceManager {
     });
 
     const reload = async (filePath: string) => {
+      if (this.shouldIgnoreWatcherEvent(filePath)) return;
       const svc = await this.loadServiceFile(filePath);
       if (svc) this.emit(svc.id);
     };
@@ -131,10 +137,24 @@ export class WorkspaceManager {
       .on('change', reload)
       .on('add', reload)
       .on('unlink', (filePath) => {
+        if (this.shouldIgnoreWatcherEvent(filePath)) return;
         const id = filePath.split(/[\\/]/).pop()!.replace(/\.json$/, '');
         this.services.delete(id);
         this.emit(id);
       });
+  }
+
+  private shouldIgnoreWatcherEvent(filePath: string): boolean {
+    const expiresAt = this.suppressedWatcherFiles.get(filePath);
+    if (!expiresAt) return false;
+
+    if (expiresAt < Date.now()) {
+      this.suppressedWatcherFiles.delete(filePath);
+      return false;
+    }
+
+    this.suppressedWatcherFiles.delete(filePath);
+    return true;
   }
 
   private emit(serviceId: string): void {
@@ -191,8 +211,9 @@ export class WorkspaceManager {
     const existing = this.services.get(id);
     if (!existing) throw new Error(`Service '${id}' not found`);
     const updated: Service = { ...existing, ...updates, id };
-    await this.persistService(updated);
+    await this.persistService(updated, true);
     this.services.set(id, updated);
+    this.emit(id);
     return updated;
   }
 
