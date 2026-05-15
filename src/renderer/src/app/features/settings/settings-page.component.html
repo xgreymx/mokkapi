@@ -1,0 +1,133 @@
+<div class="h-full overflow-y-auto scrollbar-thin px-6 py-6 max-w-2xl surface">
+  <h1 class="font-semibold text-base mb-6">Settings</h1>
+
+  <!-- ── Appearance ──────────────────────────────────────────────────── -->
+  <section class="mb-8">
+    <h2 class="text-[11px] font-semibold uppercase tracking-wider text-[rgb(var(--text-muted))] mb-3">
+      Appearance
+    </h2>
+    <div class="card divide-y divide-[rgb(var(--border))]">
+
+      <div class="flex items-center justify-between px-4 py-3">
+        <div>
+          <p class="text-sm font-medium">Theme</p>
+          <p class="text-xs text-[rgb(var(--text-muted))]">
+            Currently resolved: {{ themeService.resolved() }}
+          </p>
+        </div>
+        <div class="flex gap-1 rounded-lg border border-[rgb(var(--border))] p-0.5 surface">
+          @for (opt of themeOptions; track opt.value) {
+            <button (click)="setTheme(opt.value)"
+                    class="px-2.5 py-1 rounded text-xs font-medium transition-colors"
+                    [class]="themeService.preference() === opt.value
+                      ? 'surface-el text-[rgb(var(--text))] shadow-sm'
+                      : 'text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text))]'">
+              {{ opt.label }}
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Workspace ───────────────────────────────────────────────────── -->
+  <section class="mb-8">
+    <h2 class="text-[11px] font-semibold uppercase tracking-wider text-[rgb(var(--text-muted))] mb-3">
+      Workspace
+    </h2>
+    <div class="card divide-y divide-[rgb(var(--border))]">
+
+      <div class="flex items-center justify-between px-4 py-3">
+        <div class="flex-1 min-w-0 mr-4">
+          <p class="text-sm font-medium">Workspace folder</p>
+          <p class="text-xs text-[rgb(var(--text-muted))] font-mono truncate mt-0.5">
+            {{ store.settings()?.workspacePath }}
+          </p>
+        </div>
+        <button class="btn btn-outline btn-sm" (click)="openWorkspaceFolder()">
+          Open folder
+        </button>
+      </div>
+
+      <div class="flex items-center justify-between px-4 py-3">
+        <div>
+          <p class="text-sm font-medium">Default port base</p>
+          <p class="text-xs text-[rgb(var(--text-muted))]">New services increment from this port</p>
+        </div>
+        <input class="input w-24 font-mono text-right" type="number" [(ngModel)]="portBase"
+               (change)="savePortBase()" />
+      </div>
+    </div>
+  </section>
+
+  <!-- ── History ─────────────────────────────────────────────────────── -->
+  <section class="mb-8">
+    <h2 class="text-[11px] font-semibold uppercase tracking-wider text-[rgb(var(--text-muted))] mb-3">
+      Request History
+    </h2>
+    <div class="card divide-y divide-[rgb(var(--border))]">
+
+      <div class="flex items-center justify-between px-4 py-3">
+        <div>
+          <p class="text-sm font-medium">Retention (days)</p>
+          <p class="text-xs text-[rgb(var(--text-muted))]">Older entries are trimmed on launch</p>
+        </div>
+        <input class="input w-20 font-mono text-right" type="number" [(ngModel)]="retentionDays"
+               (change)="saveRetention()" />
+      </div>
+
+      <div class="flex items-center justify-between px-4 py-3">
+        <div>
+          <p class="text-sm font-medium">Max rows</p>
+          <p class="text-xs text-[rgb(var(--text-muted))]">Oldest entries pruned beyond this limit</p>
+        </div>
+        <input class="input w-28 font-mono text-right" type="number" [(ngModel)]="retentionRows"
+               (change)="saveRetention()" />
+      </div>
+    </div>
+  </section>
+
+  <!-- ── HTTPS / Certificate Authority ──────────────────────────────── -->
+  <section class="mb-8">
+    <h2 class="text-[11px] font-semibold uppercase tracking-wider text-[rgb(var(--text-muted))] mb-3">
+      HTTPS / Local CA
+    </h2>
+    <div class="card divide-y divide-[rgb(var(--border))]">
+
+      <div class="flex items-center justify-between px-4 py-3">
+        <div>
+          <p class="text-sm font-medium">Local CA certificate</p>
+          <p class="text-xs text-[rgb(var(--text-muted))] font-mono mt-0.5 truncate max-w-xs">
+            {{ caPath() }}
+          </p>
+        </div>
+        <button class="btn btn-outline btn-sm" (click)="regenerateCa()"
+                style="color: rgb(var(--status-4xx)); border-color: rgb(var(--status-4xx) / 0.4);">
+          Regenerate CA
+        </button>
+      </div>
+
+      <div class="px-4 py-3">
+        <p class="text-xs font-medium mb-2">Trust the CA (once, per machine)</p>
+        <div class="rounded surface border border-[rgb(var(--border))] px-3 py-2">
+          <p class="text-xs font-mono text-[rgb(var(--text-muted))] mb-1">Windows (PowerShell as admin):</p>
+          <pre class="text-xs font-mono whitespace-pre-wrap break-all">certutil -addstore Root "{{ caPath() }}"</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── About ───────────────────────────────────────────────────────── -->
+  <section>
+    <div class="card px-4 py-3 flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium">mokkapi</p>
+        <p class="text-xs text-[rgb(var(--text-muted))]">v0.1.0 — local-first Mock API workbench</p>
+      </div>
+      <a href="https://github.com" target="_blank"
+         class="text-xs hover:underline" style="color: rgb(var(--primary));">
+        GitHub →
+      </a>
+    </div>
+  </section>
+</div>

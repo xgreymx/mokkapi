@@ -3,74 +3,81 @@
 /* ─── Dark mode variant (class strategy) ─────────────────────────────────── */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ─── Design tokens exposed as Tailwind theme utilities ──────────────────── */
+/* ─── Tailwind v4 theme tokens ───────────────────────────────────────────── */
 @theme {
-  --color-border:            rgb(var(--border) / <alpha-value>);
-  --color-background:        rgb(var(--bg) / <alpha-value>);
-  --color-foreground:        rgb(var(--text) / <alpha-value>);
-  --color-muted:             rgb(var(--bg-elevated) / <alpha-value>);
-  --color-muted-foreground:  rgb(var(--text-muted) / <alpha-value>);
-  --color-primary:           rgb(var(--primary) / <alpha-value>);
-  --color-primary-foreground:rgb(var(--primary-fg) / <alpha-value>);
+  --color-border:             rgb(var(--border) / <alpha-value>);
+  --color-background:         rgb(var(--bg) / <alpha-value>);
+  --color-foreground:         rgb(var(--text) / <alpha-value>);
+  --color-muted:              rgb(var(--bg-elevated) / <alpha-value>);
+  --color-muted-foreground:   rgb(var(--text-muted) / <alpha-value>);
+  --color-primary:            rgb(var(--primary) / <alpha-value>);
+  --color-primary-foreground: rgb(var(--primary-fg) / <alpha-value>);
+  --color-accent:             rgb(var(--bg-elevated) / <alpha-value>);
+  --color-accent-foreground:  rgb(var(--text) / <alpha-value>);
+  --color-destructive:        rgb(var(--status-5xx) / <alpha-value>);
+  --color-card:               rgb(var(--bg-elevated) / <alpha-value>);
+  --color-card-foreground:    rgb(var(--text) / <alpha-value>);
 
   --font-family-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-family-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
-
-  --radius: 6px;
 }
 
-/* ─── Design token layer ─────────────────────────────────────────────────── */
+/* ─── Design tokens ──────────────────────────────────────────────────────── */
 @layer base {
-  /*
-   * Light theme — editorial minimalism.
-   * Surface hierarchy: bg (page) → bg-elevated (panels/cards) → bg-overlay (popovers)
-   */
   :root {
-    --bg:           249 249 248;   /* stone-50 */
-    --bg-elevated:  255 255 255;
+    /* ─ Surfaces (light mode) ─ */
+    --bg:           250 250 249;   /* stone-50 — page background */
+    --bg-elevated:  255 255 255;   /* white — cards, inputs */
+    --bg-sunken:    244 244 242;   /* slightly darker than --bg for sidebars */
     --bg-overlay:   255 255 255;
-    --border:       231 229 228;   /* stone-200 */
+    --bg-hover:     245 245 244;   /* hover state on lists */
+
+    --border:       228 228 228;   /* zinc-200 */
+    --border-strong: 212 212 216;  /* zinc-300 — for inputs (more visible) */
     --border-focus: 99  102 241;   /* indigo-500 */
 
-    --text:         10  10  10;
+    --text:         24  24  27;    /* zinc-900 */
     --text-muted:   82  82  91;    /* zinc-600 */
     --text-xmuted:  161 161 170;   /* zinc-400 */
 
     --primary:      79  70  229;   /* indigo-600 */
     --primary-fg:   255 255 255;
 
-    /* Status / semantic */
     --status-2xx:   22  163 74;    /* emerald-600 */
     --status-3xx:   2   132 199;   /* sky-600 */
     --status-4xx:   217 119 6;     /* amber-600 */
     --status-5xx:   220 38  38;    /* rose-600 */
 
-    /* Method badge colours (constant across themes) */
-    --method-get:     37  99  235;   /* blue-600 */
-    --method-post:    22  163 74;    /* green-600 */
-    --method-put:     217 119 6;     /* amber-600 */
-    --method-patch:   147 51  234;   /* purple-600 */
-    --method-delete:  220 38  38;    /* red-600 */
-    --method-head:    71  85  105;   /* slate-600 */
+    --method-get:     37  99  235;
+    --method-post:    22  163 74;
+    --method-put:     217 119 6;
+    --method-patch:   147 51  234;
+    --method-delete:  220 38  38;
+    --method-head:    71  85  105;
     --method-options: 71  85  105;
 
     --rail-width: 52px;
     --topbar-height: 48px;
   }
 
-  /* Dark theme — same hierarchy, inverted surfaces */
   .dark {
-    --bg:           11  11  12;
-    --bg-elevated:  20  20  22;
-    --bg-overlay:   24  24  27;
-    --border:       39  39  42;    /* zinc-800 */
+    /* ─ Surfaces (dark mode) ─ */
+    --bg:           17  17  19;    /* page background */
+    --bg-elevated:  30  30  34;    /* cards, inputs — clearly lighter than bg */
+    --bg-sunken:    13  13  15;    /* sidebars, sunken zones */
+    --bg-overlay:   38  38  42;
+    --bg-hover:     38  38  42;
 
-    --text:         250 250 250;
+    --border:       45  45  50;    /* visible separators */
+    --border-strong: 65 65 72;     /* input borders — clearly visible */
+    --border-focus: 129 140 248;   /* indigo-400 */
+
+    --text:         245 245 245;
     --text-muted:   161 161 170;   /* zinc-400 */
-    --text-xmuted:  82  82  91;    /* zinc-600 */
+    --text-xmuted:  113 113 122;   /* zinc-500 — slightly brighter */
 
     --primary:      129 140 248;   /* indigo-400 */
-    --primary-fg:   17  24  39;    /* gray-900 */
+    --primary-fg:   17  17  19;
 
     --status-2xx:   52  211 153;   /* emerald-400 */
     --status-3xx:   56  189 248;   /* sky-400 */
@@ -78,16 +85,13 @@
     --status-5xx:   251 113 133;   /* rose-400 */
   }
 
-  * {
-    @apply border-border;
-  }
-
   html, body {
-    @apply bg-[rgb(var(--bg))] text-[rgb(var(--text))];
+    background-color: rgb(var(--bg));
+    color: rgb(var(--text));
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     height: 100%;
-    overflow: hidden; /* Electron: prevent outer scroll */
+    overflow: hidden;
   }
 
   code, pre, .mono {
@@ -95,61 +99,326 @@
   }
 }
 
-/* ─── Utility classes built on design tokens ──────────────────────────────── */
+/* ─── Component classes ──────────────────────────────────────────────────── */
 @layer components {
-  /* Surface panels */
+
+  /* ─ Surfaces ─ */
   .surface      { background-color: rgb(var(--bg)); }
   .surface-el   { background-color: rgb(var(--bg-elevated)); }
+  .surface-sk   { background-color: rgb(var(--bg-sunken)); }
   .surface-ov   { background-color: rgb(var(--bg-overlay)); }
 
-  /* Status-coded text */
   .text-2xx  { color: rgb(var(--status-2xx)); }
   .text-3xx  { color: rgb(var(--status-3xx)); }
   .text-4xx  { color: rgb(var(--status-4xx)); }
   .text-5xx  { color: rgb(var(--status-5xx)); }
 
-  /* Method badges */
-  .badge-method {
-    @apply inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[10px] font-semibold font-mono uppercase tracking-wider;
-    min-width: 54px;
+  /* ─ Buttons ──────────────────────────────────────────────────────────── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    height: 32px;
+    padding: 0 0.875rem;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 120ms, color 120ms, border-color 120ms, opacity 120ms;
+    user-select: none;
+    border: 1px solid transparent;
+    background-color: rgb(var(--primary));
+    color: rgb(var(--primary-fg));
   }
-  .badge-get     { background-color: rgb(var(--method-get) / 0.12);     color: rgb(var(--method-get)); }
-  .badge-post    { background-color: rgb(var(--method-post) / 0.12);    color: rgb(var(--method-post)); }
-  .badge-put     { background-color: rgb(var(--method-put) / 0.12);     color: rgb(var(--method-put)); }
-  .badge-patch   { background-color: rgb(var(--method-patch) / 0.12);   color: rgb(var(--method-patch)); }
-  .badge-delete  { background-color: rgb(var(--method-delete) / 0.12);  color: rgb(var(--method-delete)); }
-  .badge-head    { background-color: rgb(var(--method-head) / 0.12);    color: rgb(var(--method-head)); }
-  .badge-options { background-color: rgb(var(--method-options) / 0.12); color: rgb(var(--method-options)); }
+  .btn:hover    { opacity: 0.92; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgb(var(--bg)), 0 0 0 4px rgb(var(--border-focus));
+  }
 
-  /* Status dot indicator (service running/stopped) */
-  .dot-running { @apply w-2 h-2 rounded-full bg-[rgb(var(--status-2xx))]; }
-  .dot-stopped { @apply w-2 h-2 rounded-full bg-[rgb(var(--text-xmuted))]; }
-  .dot-error   { @apply w-2 h-2 rounded-full bg-[rgb(var(--status-5xx))]; }
+  .btn-outline {
+    background-color: rgb(var(--bg-elevated));
+    color: rgb(var(--text));
+    border-color: rgb(var(--border-strong));
+  }
+  .btn-outline:hover {
+    background-color: rgb(var(--bg-hover));
+    opacity: 1;
+  }
+
+  .btn-ghost {
+    background-color: transparent;
+    color: rgb(var(--text-muted));
+    border-color: transparent;
+  }
+  .btn-ghost:hover {
+    background-color: rgb(var(--bg-hover));
+    color: rgb(var(--text));
+    opacity: 1;
+  }
+
+  .btn-link {
+    background-color: transparent;
+    color: rgb(var(--primary));
+    border-color: transparent;
+    height: auto;
+    padding: 0;
+  }
+  .btn-link:hover { text-decoration: underline; opacity: 1; }
+
+  .btn-destructive {
+    background-color: rgb(var(--status-5xx));
+    color: white;
+  }
+  .btn-destructive-soft {
+    background-color: rgb(var(--status-5xx) / 0.1);
+    color: rgb(var(--status-5xx));
+    border-color: transparent;
+  }
+  .btn-destructive-soft:hover {
+    background-color: rgb(var(--status-5xx) / 0.18);
+    opacity: 1;
+  }
+
+  .btn-success-soft {
+    background-color: rgb(var(--status-2xx) / 0.1);
+    color: rgb(var(--status-2xx));
+    border-color: transparent;
+  }
+  .btn-success-soft:hover {
+    background-color: rgb(var(--status-2xx) / 0.18);
+    opacity: 1;
+  }
+
+  .btn-sm  { height: 26px; padding: 0 0.625rem; font-size: 0.75rem; }
+  .btn-xs  { height: 22px; padding: 0 0.5rem;   font-size: 0.6875rem; }
+  .btn-icon { width: 28px; height: 28px; padding: 0; }
+  .btn-icon-sm { width: 24px; height: 24px; padding: 0; }
+
+  /* ─ Inputs ───────────────────────────────────────────────────────────── */
+  .input {
+    display: block;
+    width: 100%;
+    height: 32px;
+    padding: 0 0.625rem;
+    border: 1px solid rgb(var(--border-strong));
+    border-radius: 6px;
+    background-color: rgb(var(--bg-elevated));
+    color: rgb(var(--text));
+    font-size: 0.8125rem;
+    line-height: 1;
+    transition: border-color 120ms, box-shadow 120ms;
+  }
+  .input::placeholder { color: rgb(var(--text-xmuted)); }
+  .input:focus {
+    outline: none;
+    border-color: rgb(var(--border-focus));
+    box-shadow: 0 0 0 3px rgb(var(--border-focus) / 0.18);
+  }
+  .input:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  .input-sm { height: 28px; font-size: 0.75rem; padding: 0 0.5rem; }
+
+  /* ─ Textareas ─ */
+  .textarea {
+    display: block;
+    width: 100%;
+    min-height: 96px;
+    padding: 0.5rem 0.625rem;
+    border: 1px solid rgb(var(--border-strong));
+    border-radius: 6px;
+    background-color: rgb(var(--bg-elevated));
+    color: rgb(var(--text));
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    transition: border-color 120ms, box-shadow 120ms;
+    resize: vertical;
+  }
+  .textarea::placeholder { color: rgb(var(--text-xmuted)); }
+  .textarea:focus {
+    outline: none;
+    border-color: rgb(var(--border-focus));
+    box-shadow: 0 0 0 3px rgb(var(--border-focus) / 0.18);
+  }
+
+  /* ─ Selects ─ */
+  .select {
+    display: block;
+    width: 100%;
+    height: 32px;
+    padding: 0 1.75rem 0 0.625rem;
+    border: 1px solid rgb(var(--border-strong));
+    border-radius: 6px;
+    background-color: rgb(var(--bg-elevated));
+    color: rgb(var(--text));
+    font-size: 0.8125rem;
+    appearance: none;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    transition: border-color 120ms, box-shadow 120ms;
+  }
+  .select:focus {
+    outline: none;
+    border-color: rgb(var(--border-focus));
+    box-shadow: 0 0 0 3px rgb(var(--border-focus) / 0.18);
+  }
+
+  /* ─ Labels ─ */
+  .label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: rgb(var(--text-muted));
+    margin-bottom: 0.375rem;
+  }
+
+  /* ─ Cards ─ */
+  .card {
+    background-color: rgb(var(--bg-elevated));
+    border: 1px solid rgb(var(--border));
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+  }
+  .card-header  { padding: 0.875rem 1rem 0.5rem; }
+  .card-title   {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: rgb(var(--text));
+    letter-spacing: -0.01em;
+  }
+  .card-content { padding: 0.5rem 1rem 1rem; }
+
+  /* ─ Method badges ─ */
+  .badge-method {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.0625rem 0.375rem;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    min-width: 48px;
+    line-height: 1.4;
+  }
+  .badge-get     { background-color: rgb(var(--method-get) / 0.14);     color: rgb(var(--method-get)); }
+  .badge-post    { background-color: rgb(var(--method-post) / 0.14);    color: rgb(var(--method-post)); }
+  .badge-put     { background-color: rgb(var(--method-put) / 0.14);     color: rgb(var(--method-put)); }
+  .badge-patch   { background-color: rgb(var(--method-patch) / 0.14);   color: rgb(var(--method-patch)); }
+  .badge-delete  { background-color: rgb(var(--method-delete) / 0.14);  color: rgb(var(--method-delete)); }
+  .badge-head    { background-color: rgb(var(--method-head) / 0.14);    color: rgb(var(--method-head)); }
+  .badge-options { background-color: rgb(var(--method-options) / 0.14); color: rgb(var(--method-options)); }
+
+  /* ─ Status dots ─ */
+  .dot-running  { width: 8px; height: 8px; border-radius: 9999px; background-color: rgb(var(--status-2xx)); }
+  .dot-stopped  { width: 8px; height: 8px; border-radius: 9999px; background-color: rgb(var(--text-xmuted)); }
+  .dot-error    { width: 8px; height: 8px; border-radius: 9999px; background-color: rgb(var(--status-5xx)); }
   .dot-starting {
-    @apply w-2 h-2 rounded-full bg-[rgb(var(--status-4xx))];
+    width: 8px; height: 8px; border-radius: 9999px;
+    background-color: rgb(var(--status-4xx));
     animation: pulse 1s cubic-bezier(0.4,0,0.6,1) infinite;
   }
 
-  /* Rail nav button */
-  .rail-btn {
-    @apply flex items-center justify-center w-10 h-10 rounded-lg
-           text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text))]
-           hover:bg-[rgb(var(--bg-elevated))]
-           transition-colors duration-150 cursor-pointer;
+  /* ─ Sidebar list rows (services/endpoints) ─ */
+  .service-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    font-size: 0.8125rem;
+    color: rgb(var(--text));
+    background-color: transparent;
+    border: 0;
+    border-left: 2px solid transparent;
+    cursor: pointer;
+    transition: background-color 100ms;
   }
-  .rail-btn.active {
-    @apply bg-[rgb(var(--bg-elevated))] text-[rgb(var(--primary))];
+  .service-row:hover { background-color: rgb(var(--bg-hover)); }
+  .service-row--active {
+    background-color: rgb(var(--bg-elevated));
+    border-left-color: rgb(var(--primary));
   }
 
-  /* Thin scrollbar */
+  .endpoint-row {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    background-color: transparent;
+    color: rgb(var(--text));
+    border: 0;
+    border-bottom: 1px solid rgb(var(--border) / 0.5);
+    cursor: pointer;
+    transition: background-color 100ms;
+  }
+  .endpoint-row:hover { background-color: rgb(var(--bg-hover)); }
+  .endpoint-row--active {
+    background-color: rgb(var(--bg-elevated));
+    box-shadow: inset 2px 0 0 rgb(var(--primary));
+  }
+
+  .history-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    background-color: transparent;
+    color: rgb(var(--text));
+    border: 0;
+    border-bottom: 1px solid rgb(var(--border) / 0.45);
+    cursor: pointer;
+    transition: background-color 100ms;
+  }
+  .history-row:hover { background-color: rgb(var(--bg-hover)); }
+  .history-row--active {
+    background-color: rgb(var(--bg-elevated));
+    box-shadow: inset 2px 0 0 rgb(var(--primary));
+  }
+
+  /* ─ Side rail ─ */
+  .rail-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    color: rgb(var(--text-muted));
+    transition: background-color 120ms, color 120ms;
+    cursor: pointer;
+  }
+  .rail-btn:hover {
+    color: rgb(var(--text));
+    background-color: rgb(var(--bg-elevated));
+  }
+  .rail-btn.active {
+    background-color: rgb(var(--bg-elevated));
+    color: rgb(var(--primary));
+  }
+
+  /* ─ Scrollbars ─ */
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: rgb(var(--border)) transparent;
+    scrollbar-color: rgb(var(--border-strong)) transparent;
   }
-  .scrollbar-thin::-webkit-scrollbar { width: 5px; height: 5px; }
+  .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
   .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: rgb(var(--border));
+    background-color: rgb(var(--border-strong));
     border-radius: 9999px;
   }
 }

@@ -1,0 +1,25 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "cli": {
+    "packageManager": "bun"
+  },
+  "projects": {
+    "mokkapi": {
+      "projectType": "application",
+      "root": "src/renderer",
+      "sourceRoot": "src/renderer/src",
+      "prefix": "app",
+      "schematics": {
+        "@schematics/angular:component": {
+          "inlineTemplate": false,
+          "inlineStyle": false,
+          "style": "css",
+          "changeDetection": "OnPush",
+          "standalone": true
+        }
+      },
+      "architect": {}
+    }
+  }
+}

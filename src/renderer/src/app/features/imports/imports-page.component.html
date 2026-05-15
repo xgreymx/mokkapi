@@ -1,0 +1,62 @@
+<div class="flex flex-col items-center justify-center h-full px-8 gap-6 max-w-lg mx-auto surface">
+
+  <div class="text-center">
+    <h2 class="font-semibold text-base mb-1">Import OpenAPI Spec</h2>
+    <p class="text-sm text-[rgb(var(--text-muted))]">
+      Drop an OpenAPI 3 YAML or JSON file to create a service with all its endpoints pre-populated.
+    </p>
+  </div>
+
+  <!-- Drop zone -->
+  <div (dragover)="$event.preventDefault()"
+       (drop)="onDrop($event)"
+       class="w-full border-2 border-dashed border-[rgb(var(--border-strong))] rounded-lg
+              flex flex-col items-center justify-center gap-3 py-12 px-6 text-center
+              hover:border-[rgb(var(--primary))]
+              transition-colors cursor-pointer surface-el"
+       (click)="openFilePicker()"
+       style="--hover-bg: rgb(var(--primary) / 0.04);">
+    <svg viewBox="0 0 24 24" width="36" height="36" fill="none"
+         stroke="currentColor" stroke-width="1.25"
+         class="text-[rgb(var(--text-muted))]"
+         stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+    </svg>
+    <div>
+      <p class="text-sm font-medium">Drop file here or click to browse</p>
+      <p class="text-xs text-[rgb(var(--text-muted))] mt-0.5">.yaml, .yml, .json</p>
+    </div>
+  </div>
+
+  <!-- Result -->
+  @if (result()) {
+    <div class="w-full rounded border p-4"
+         style="border-color: rgb(var(--status-2xx) / 0.3); background: rgb(var(--status-2xx) / 0.06);">
+      <p class="text-sm font-medium mb-1" style="color: rgb(var(--status-2xx));">Import successful</p>
+      <p class="text-xs text-[rgb(var(--text-muted))]">
+        Created service <strong>{{ result()!.serviceName }}</strong> with
+        {{ result()!.endpointsCreated }} endpoint(s).
+      </p>
+      @if (result()!.warnings.length > 0) {
+        <ul class="mt-2 text-xs" style="color: rgb(var(--status-4xx));">
+          @for (w of result()!.warnings; track $index) {
+            <li>⚠ {{ w }}</li>
+          }
+        </ul>
+      }
+      <button class="btn btn-link btn-xs mt-2" (click)="goToServices()">View service →</button>
+    </div>
+  }
+
+  @if (importError()) {
+    <div class="w-full rounded border p-4"
+         style="border-color: rgb(var(--status-5xx) / 0.3); background: rgb(var(--status-5xx) / 0.06);">
+      <p class="text-sm font-medium" style="color: rgb(var(--status-5xx));">Import failed</p>
+      <p class="text-xs text-[rgb(var(--text-muted))] mt-1 font-mono">{{ importError() }}</p>
+    </div>
+  }
+
+  @if (loading()) {
+    <p class="text-sm text-[rgb(var(--text-muted))] animate-pulse">Importing…</p>
+  }
+</div>

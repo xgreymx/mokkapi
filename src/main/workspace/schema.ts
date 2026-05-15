@@ -6,7 +6,7 @@
 import { z } from 'zod';
 
 const HttpMethodSchema = z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']);
-const BodyKindSchema = z.enum(['json', 'xml', 'text', 'binary-base64']);
+const BodyKindSchema = z.enum(['json', 'xml', 'html', 'text', 'binary-base64']);
 const PersistedBodyKindSchema = z.preprocess(
   (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
   BodyKindSchema.default('json'),

@@ -3,7 +3,7 @@
 export type ServiceProtocol = 'http' | 'https';
 export type TlsMode = 'auto' | 'byo';
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 'OPTIONS';
-export type BodyKind = 'json' | 'xml' | 'text' | 'binary-base64';
+export type BodyKind = 'json' | 'xml' | 'html' | 'text' | 'binary-base64';
 export type MatchOp = 'eq' | 'exists' | 'regex' | 'gt' | 'lt';
 export type ServiceStatus = 'running' | 'stopped' | 'error' | 'starting';
 export type AppTheme = 'system' | 'light' | 'dark';

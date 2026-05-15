@@ -1,0 +1,126 @@
+<div class="flex flex-col h-full overflow-hidden surface">
+
+  <!-- Request input area -->
+  <div class="flex flex-col gap-3 p-4 border-b border-[rgb(var(--border))] surface-el shrink-0">
+
+    <!-- Method + URL + Send -->
+    <div class="flex items-center gap-2">
+      <select class="select w-28 font-mono" [(ngModel)]="method">
+        @for (m of methods; track m) {
+          <option [value]="m">{{ m }}</option>
+        }
+      </select>
+
+      <input class="input flex-1 font-mono"
+             [(ngModel)]="url"
+             placeholder="http://localhost:4001/v1/charges"
+             (keydown.enter)="send()" />
+
+      <button class="btn" [disabled]="sending()" (click)="send()">
+        @if (sending()) { Sending… } @else { Send }
+      </button>
+    </div>
+
+    <!-- Tabs: Headers / Body -->
+    <div class="flex gap-4 text-xs border-b border-[rgb(var(--border))]">
+      @for (tab of tabs; track tab) {
+        <button (click)="activeTab.set(tab)"
+                class="pb-2 -mb-px font-medium transition-colors"
+                [class]="activeTab() === tab
+                  ? 'text-[rgb(var(--text))] border-b-2 border-[rgb(var(--primary))]'
+                  : 'text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text))]'">
+          {{ tab }}
+        </button>
+      }
+    </div>
+
+    <!-- Headers tab -->
+    @if (activeTab() === 'Headers') {
+      <div class="flex flex-col gap-1.5">
+        @for (row of headers(); track $index; let i = $index) {
+          <div class="flex items-center gap-2">
+            <input class="input flex-1 font-mono text-xs" [(ngModel)]="row.key" placeholder="Header name" />
+            <input class="input flex-1 font-mono text-xs" [(ngModel)]="row.value" placeholder="Value" />
+            <button class="btn btn-ghost btn-icon-sm" (click)="removeHeader(i)"
+                    style="color: rgb(var(--text-xmuted));">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none"
+                   stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 6 6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+        }
+        <button class="btn btn-link btn-xs" (click)="addHeader()">+ Add header</button>
+      </div>
+    }
+
+    <!-- Body tab -->
+    @if (activeTab() === 'Body') {
+      <textarea class="textarea font-mono" [(ngModel)]="body" rows="6" placeholder='{"key": "value"}'></textarea>
+    }
+  </div>
+
+  <!-- Response area -->
+  <div class="flex-1 overflow-y-auto scrollbar-thin p-4">
+    @if (!response() && !error()) {
+      <div class="flex flex-col items-center justify-center h-full gap-2 text-center">
+        <svg viewBox="0 0 24 24" width="36" height="36" fill="none"
+             stroke="currentColor" stroke-width="1.25"
+             class="text-[rgb(var(--border-strong))]"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 2 11 13M22 2 15 22 11 13 2 9l20-7z"/>
+        </svg>
+        <p class="text-sm text-[rgb(var(--text-muted))]">Send a request to see the response</p>
+      </div>
+    }
+
+    @if (error()) {
+      <div class="rounded border p-4 text-sm font-mono"
+           style="border-color: rgb(var(--status-5xx) / 0.3); background: rgb(var(--status-5xx) / 0.06); color: rgb(var(--status-5xx));">
+        {{ error() }}
+      </div>
+    }
+
+    @if (response(); as res) {
+      <div class="flex flex-col gap-3">
+        <!-- Status line -->
+        <div class="flex items-center gap-3">
+          <span class="text-sm font-mono font-semibold" [class]="statusCodeClass(res.status)">
+            {{ res.status }} {{ res.statusText }}
+          </span>
+          <span class="text-xs font-mono text-[rgb(var(--text-muted))]">
+            {{ res.durationMs }}ms
+          </span>
+        </div>
+
+        <!-- Response headers -->
+        @if (Object.keys(res.headers).length > 0) {
+          <details class="text-xs">
+            <summary class="cursor-pointer text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text))] font-medium">
+              Response Headers ({{ Object.keys(res.headers).length }})
+            </summary>
+            <div class="mt-1.5 rounded border border-[rgb(var(--border))] overflow-hidden">
+              @for (entry of objectEntries(res.headers); track entry[0]) {
+                <div class="flex gap-2 px-3 py-1.5 border-b border-[rgb(var(--border))/0.5] last:border-0">
+                  <span class="font-mono text-[rgb(var(--text-muted))] shrink-0">{{ entry[0] }}</span>
+                  <span class="font-mono truncate">{{ entry[1] }}</span>
+                </div>
+              }
+            </div>
+          </details>
+        }
+
+        <!-- Response body -->
+        @if (res.body !== null) {
+          <div>
+            <p class="text-xs font-medium text-[rgb(var(--text-muted))] mb-1.5">Body</p>
+            <pre class="rounded border border-[rgb(var(--border))] surface-el px-4 py-3
+                        text-xs font-mono overflow-x-auto scrollbar-thin
+                        whitespace-pre-wrap break-all">{{ prettyBody(res) }}</pre>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>
