@@ -1,7 +1,7 @@
 <div class="flex h-full flex-col overflow-hidden surface">
 
   <!-- ─── Top toolbar ─────────────────────────────────────────────────────── -->
-  <div class="flex items-center gap-2 border-b border-[rgb(var(--border))] surface-el px-4 py-2.5 shrink-0">
+  <div class="flex flex-wrap items-center gap-2 border-b border-[rgb(var(--border))] surface-el px-4 py-3 shrink-0">
     <select
       class="select w-28 font-mono"
       [(ngModel)]="editMethod"
@@ -13,163 +13,305 @@
     </select>
 
     <input
-      class="input flex-1 font-mono"
+      class="input min-w-[11rem] flex-1 font-mono sm:min-w-[18rem]"
       [(ngModel)]="editPath"
       [ngModelOptions]="{ standalone: true }"
       placeholder="/v1/resource/:id"
     />
 
     <input
-      class="input w-56 text-xs"
+      class="input min-w-[11rem] flex-1 text-xs sm:min-w-[14rem] lg:w-64 lg:flex-none"
       [(ngModel)]="editDescription"
       [ngModelOptions]="{ standalone: true }"
       placeholder="Description (optional)"
     />
 
-    <button class="btn btn-sm" [disabled]="saving()" (click)="saveEndpoint()">
-      Save
-    </button>
+    <div class="ml-auto flex items-center gap-2">
+      <button class="btn btn-sm" [disabled]="saving()" (click)="saveEndpoint()">
+        Save
+      </button>
 
-    <button
-      class="btn btn-ghost btn-icon-sm"
-      (click)="deleteEndpoint()"
-      title="Delete endpoint"
-      style="color: rgb(var(--status-5xx));"
-    >
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
-      </svg>
-    </button>
+      <button
+        class="btn btn-ghost btn-icon-sm"
+        (click)="deleteEndpoint()"
+        title="Delete endpoint"
+        style="color: rgb(var(--status-5xx));"
+      >
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
+        </svg>
+      </button>
+    </div>
   </div>
 
   <!-- ─── Two-column body ─────────────────────────────────────────────────── -->
   <div class="flex min-h-0 flex-1 overflow-hidden">
 
     <!-- Left rail: variant list -->
-    <div class="flex w-52 shrink-0 flex-col overflow-hidden border-r border-[rgb(var(--border))] surface-sk">
-      <div class="flex items-center justify-between border-b border-[rgb(var(--border))] px-3 py-2">
-        <span class="text-[11px] font-semibold uppercase tracking-wider text-[rgb(var(--text-muted))]">
-          Variants
-        </span>
-        <button class="btn btn-ghost btn-icon-sm" (click)="addVariant()" title="Add variant"
-                style="color: rgb(var(--primary));">
+    @if (variantRailVisible()) {
+      <div class="variant-rail variant-rail--panel flex w-52 shrink-0 flex-col overflow-hidden border-r border-[rgb(var(--border))] surface-sk"
+           [class.shadow-xl]="!showVariantRail()"
+           [class.variant-rail--peek]="!showVariantRail()"
+           (mouseenter)="scheduleVariantRailPeek()"
+           (mouseleave)="cancelVariantRailPeek()">
+        <div class="flex items-center justify-between border-b border-[rgb(var(--border))] px-3 py-2 gap-1">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-[rgb(var(--text-muted))]">
+            Variants
+          </span>
+          <div class="flex items-center gap-1">
+            <button class="btn btn-ghost btn-icon-sm" (click)="addVariant()" title="Add variant"
+                    style="color: rgb(var(--primary));">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </button>
+            <button class="btn btn-ghost btn-icon-sm" type="button" (click)="toggleVariantRail()"
+                    [title]="showVariantRail() ? 'Collapse variants' : 'Pin variants open'">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto py-1 scrollbar-thin">
+          @for (v of localVariants(); track v.id; let i = $index) {
+            <button
+              type="button"
+              (click)="selectVariant(i)"
+              class="variant-row"
+              [class.variant-row--active]="selectedVariantIdx() === i"
+            >
+              <span class="status-pill" [class]="statusClass(v.status)">{{ v.status }}</span>
+              <span class="flex-1 truncate text-left">{{ v.name }}</span>
+              @if (endpoint.forcedVariantId === v.id) {
+                <span style="color: rgb(var(--status-4xx));" title="Forced">⚡</span>
+              }
+            </button>
+          }
+
+          @if (localVariants().length === 0) {
+            <p class="px-3 py-6 text-center text-xs text-[rgb(var(--text-muted))]">No variants yet</p>
+          }
+        </div>
+      </div>
+    } @else {
+      <div class="variant-rail-collapsed surface-sk border-r border-[rgb(var(--border))]"
+           (mouseenter)="scheduleVariantRailPeek()"
+           (mouseleave)="cancelVariantRailPeek()">
+        <button class="variant-rail-collapsed__btn" type="button" (click)="toggleVariantRail()" title="Expand variants">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </button>
+        <button class="variant-rail-collapsed__btn" type="button" (click)="addVariant()" title="Add variant">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 5v14M5 12h14" />
           </svg>
         </button>
+        <span class="variant-rail-collapsed__count">{{ localVariants().length }}</span>
       </div>
-
-      <div class="flex-1 overflow-y-auto py-1 scrollbar-thin">
-        @for (v of localVariants(); track v.id; let i = $index) {
-          <button
-            type="button"
-            (click)="selectVariant(i)"
-            class="variant-row"
-            [class.variant-row--active]="selectedVariantIdx() === i"
-          >
-            <span class="status-pill" [class]="statusClass(v.status)">{{ v.status }}</span>
-            <span class="flex-1 truncate text-left">{{ v.name }}</span>
-            @if (endpoint.forcedVariantId === v.id) {
-              <span style="color: rgb(var(--status-4xx));" title="Forced">⚡</span>
-            }
-          </button>
-        }
-
-        @if (localVariants().length === 0) {
-          <p class="px-3 py-6 text-center text-xs text-[rgb(var(--text-muted))]">No variants yet</p>
-        }
-      </div>
-    </div>
+    }
 
     <!-- Right pane: variant editor -->
-    <div class="flex-1 overflow-y-auto scrollbar-thin">
+    <div class="editor-pane flex-1 overflow-y-auto scrollbar-thin">
       @if (selectedVariant(); as v) {
-        <form [formGroup]="variantForm" class="flex flex-col gap-5 p-5 max-w-3xl">
+        <form [formGroup]="variantForm" class="editor-form">
 
-          <!-- ── Use case card ────────────────────────────────────────────── -->
-          <section class="card">
+          <section class="card editor-section editor-section--main">
             <header class="card-header">
-              <h3 class="card-title">Use case</h3>
-              <p class="text-xs text-[rgb(var(--text-muted))] mt-0.5">
-                Describe when this variant should respond.
-              </p>
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 class="card-title">Use case</h3>
+                  <p class="text-xs text-[rgb(var(--text-muted))] mt-0.5">
+                    Describe when this variant should respond.
+                  </p>
+                </div>
+
+                <div class="editor-hero__meta">
+                  <span class="status-pill" [class]="statusClass(variantForm.controls.status.value)">
+                    {{ variantForm.controls.status.value }}
+                  </span>
+                  <span class="editor-mini-badge">{{ bodyKindDetail().name }}</span>
+                  @if (endpoint.forcedVariantId === v.id) {
+                    <span class="editor-mini-badge editor-mini-badge--accent">Forced</span>
+                  }
+                </div>
+              </div>
             </header>
-            <div class="card-content flex flex-col gap-3">
-              <div>
-                <label class="label" for="variant-name">Variant name</label>
-                <input
-                  id="variant-name"
-                  class="input"
-                  formControlName="name"
-                  placeholder="e.g. Success, Not found, Server error"
-                />
+
+            <div class="card-content flex flex-col gap-4">
+              <div class="editor-two-up">
+                <div>
+                  <label class="label" for="variant-name">Variant name</label>
+                  <input
+                    id="variant-name"
+                    class="input"
+                    formControlName="name"
+                    placeholder="e.g. Success, Not found, Server error"
+                  />
+                </div>
+
+                <div class="editor-note editor-note--scenario">
+                  <p class="editor-note__label">Current service scenario</p>
+                  <p class="editor-note__value">{{ activeServiceScenario() || 'Not set' }}</p>
+                  <p class="editor-note__caption">
+                    Empty tags mean this variant responds in every scenario.
+                  </p>
+                </div>
               </div>
 
-              <div>
+              <div class="space-y-2">
                 <label class="label" for="variant-scenarios">Active in scenarios</label>
-                <input
-                  id="variant-scenarios"
-                  class="input"
-                  formControlName="scenarios"
-                  placeholder="Default, Outage  (empty = all scenarios)"
-                />
-                <p class="mt-1 text-[11px] text-[rgb(var(--text-xmuted))]">
-                  Comma-separated scenario tags. Leave empty to match every scenario.
+
+                <div class="scenario-field">
+                  @if (scenarioTags().length === 0) {
+                    <span class="scenario-field__empty">All scenarios</span>
+                  }
+
+                  @for (scenario of scenarioTags(); track scenario; let i = $index) {
+                    <button type="button" class="scenario-chip" (click)="removeScenario(i)">
+                      <span class="scenario-chip__label">{{ scenario }}</span>
+                      <span class="scenario-chip__close" aria-hidden="true">×</span>
+                    </button>
+                  }
+
+                  <input
+                    id="variant-scenarios"
+                    class="scenario-field__input"
+                    [ngModel]="scenarioDraft()"
+                    [ngModelOptions]="{ standalone: true }"
+                    (ngModelChange)="onScenarioDraftChange($event)"
+                    (keydown)="onScenarioDraftKeydown($event)"
+                    (blur)="commitScenarioDraft()"
+                    placeholder="Type a scenario and press Enter or comma"
+                  />
+                </div>
+
+                <p class="text-[11px] text-[rgb(var(--text-muted))]">
+                  {{ scenarioSummary() }}
+                </p>
+
+                @if (scenarioSuggestions().length > 0) {
+                  <div class="flex flex-wrap gap-2 pt-1">
+                    @for (scenario of scenarioSuggestions(); track scenario) {
+                      <button
+                        type="button"
+                        class="scenario-suggestion"
+                        [class.scenario-suggestion--active]="isActiveServiceScenario(scenario)"
+                        (click)="toggleScenario(scenario)"
+                      >
+                        <span class="scenario-suggestion__label">{{ scenario }}</span>
+                        @if (isActiveServiceScenario(scenario)) {
+                          <span class="scenario-suggestion__tag">Current</span>
+                        }
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          </section>
+
+          <section class="card editor-section editor-section--side">
+            <header class="card-header">
+              <h3 class="card-title">Response</h3>
+              <p class="text-xs text-[rgb(var(--text-muted))] mt-0.5">
+                Shape what the client receives.
+              </p>
+            </header>
+
+            <div class="card-content flex flex-col gap-4">
+              <div class="editor-stat-grid">
+                <div>
+                  <div class="flex items-center justify-between gap-3">
+                    <label class="label mb-0" for="variant-status">Status code</label>
+                    <span [class]="'status-inline-label status-inline-label--' + statusTone(variantForm.controls.status.value)">
+                      {{ statusLabel(variantForm.controls.status.value) }}
+                    </span>
+                  </div>
+
+                  <div [class]="'status-field status-field--' + statusTone(variantForm.controls.status.value)">
+                    <span [class]="'status-field__badge ' + statusClass(variantForm.controls.status.value)">
+                      {{ variantForm.controls.status.value }}
+                    </span>
+                    <input
+                      id="variant-status"
+                      class="status-field__input"
+                      type="number"
+                      min="100"
+                      max="599"
+                      list="variant-status-presets"
+                      formControlName="status"
+                    />
+                  </div>
+                  <datalist id="variant-status-presets">
+                    @for (preset of statusPresets; track preset.code) {
+                      <option [value]="preset.code">{{ preset.label }}</option>
+                    }
+                  </datalist>
+                  <div class="status-presets">
+                    @for (preset of statusPresets; track preset.code) {
+                      <button
+                        type="button"
+                        class="status-preset"
+                        [class.status-preset--active]="variantForm.controls.status.value === preset.code"
+                        (click)="setStatusPreset(preset.code)"
+                      >
+                        <span class="status-preset__code">{{ preset.code }}</span>
+                        <span class="status-preset__label">{{ preset.label }}</span>
+                      </button>
+                    }
+                  </div>
+                </div>
+
+                <div>
+                  <label class="label" for="variant-delay">Delay (ms)</label>
+                  <input
+                    id="variant-delay"
+                    class="input font-mono text-right"
+                    type="number"
+                    formControlName="delayMs"
+                    min="0"
+                  />
+                </div>
+              </div>
+
+              <div class="space-y-2">
+                <div class="flex items-center justify-between gap-3">
+                  <label class="label mb-0">Body type</label>
+                  <span class="text-[11px] text-[rgb(var(--text-xmuted))] font-mono">
+                    {{ bodyKindDetail().mimeType }}
+                  </span>
+                </div>
+
+                <div class="body-type-grid">
+                  @for (opt of bodyKindOptions; track opt.value) {
+                    <button
+                      type="button"
+                      class="body-type-tile body-type-tile--compact"
+                      [class.body-type-tile--active]="currentBodyKind() === opt.value"
+                      (click)="setBodyKind(opt.value)"
+                    >
+                      <span class="body-type-tile__name">{{ opt.name }}</span>
+                      <span class="body-type-tile__meta">{{ opt.mimeType }}</span>
+                    </button>
+                  }
+                </div>
+
+                <p class="text-[11px] text-[rgb(var(--text-muted))]">
+                  {{ bodyKindDetail().description }}
                 </p>
               </div>
             </div>
           </section>
 
-          <!-- ── Response config: status / delay / type ─────────────────── -->
-          <section class="card">
-            <header class="card-header">
-              <h3 class="card-title">Response</h3>
-            </header>
-            <div class="card-content flex flex-wrap items-end gap-3">
-              <div class="flex-1 min-w-[120px]">
-                <label class="label" for="variant-status">Status code</label>
-                <input
-                  id="variant-status"
-                  class="input font-mono text-right"
-                  type="number"
-                  formControlName="status"
-                />
-              </div>
-
-              <div class="flex-1 min-w-[120px]">
-                <label class="label" for="variant-delay">Delay (ms)</label>
-                <input
-                  id="variant-delay"
-                  class="input font-mono text-right"
-                  type="number"
-                  formControlName="delayMs"
-                  min="0"
-                />
-              </div>
-
-              <div class="flex-1 min-w-[140px]">
-                <label class="label" for="variant-kind">Body type</label>
-                <select
-                  id="variant-kind"
-                  class="select"
-                  [value]="currentBodyKind()"
-                  (change)="onBodyKindSelectChange($event)"
-                >
-                  @for (opt of bodyKindOptions; track opt.value) {
-                    <option [value]="opt.value">{{ opt.label }}</option>
-                  }
-                </select>
-              </div>
-            </div>
-          </section>
-
-          <!-- ── Response headers ────────────────────────────────────────── -->
-          <section class="card">
-            <header class="card-header flex items-center justify-between">
+          <section class="card editor-section editor-section--main">
+            <header class="card-header flex items-center justify-between gap-3">
               <div>
                 <h3 class="card-title">Response headers</h3>
                 <p class="text-[11px] text-[rgb(var(--text-muted))] mt-0.5">
-                  Returned exactly as configured. Body type sets <code class="font-mono">content-type</code> automatically.
+                  Returned exactly as configured. Body type keeps <code class="font-mono">content-type</code> aligned automatically.
                 </p>
               </div>
               <button class="btn btn-outline btn-sm" type="button" (click)="addHeader()">
@@ -185,12 +327,12 @@
               }
 
               @for (entry of headerRows(); track $index; let i = $index) {
-                <div class="flex items-center gap-2">
-                  <input class="input flex-1 font-mono text-xs"
+                <div class="flex flex-wrap items-center gap-2">
+                  <input class="input flex-1 font-mono text-xs min-w-[12rem]"
                          [(ngModel)]="entry.key"
                          [ngModelOptions]="{ standalone: true }"
                          placeholder="Header name" />
-                  <input class="input flex-1 font-mono text-xs"
+                  <input class="input flex-1 font-mono text-xs min-w-[14rem]"
                          [(ngModel)]="entry.value"
                          [ngModelOptions]="{ standalone: true }"
                          placeholder="Value" />
@@ -206,109 +348,181 @@
             </div>
           </section>
 
-          <!-- ── Body ───────────────────────────────────────────────────── -->
-          <section class="card">
-            <header class="card-header flex items-center justify-between gap-3 flex-wrap">
-              <h3 class="card-title">Body</h3>
-              <div class="flex items-center gap-1.5 flex-wrap">
-                @for (opt of bodyKindOptions; track opt.value) {
-                  <button
-                    type="button"
-                    (click)="setBodyKind(opt.value)"
-                    [title]="opt.description"
-                    class="kind-chip"
-                    [class.kind-chip--active]="currentBodyKind() === opt.value"
-                  >
-                    {{ opt.label }}
-                  </button>
-                }
-              </div>
+          <section class="card editor-section editor-section--side">
+            <header class="card-header">
+              <h3 class="card-title">Match rules</h3>
+              <p class="text-xs text-[rgb(var(--text-muted))] mt-0.5">
+                The first variant whose scenario tags and rules pass will respond.
+              </p>
             </header>
 
-            <div class="card-content">
-              <textarea
-                class="textarea body-textarea"
-                formControlName="body"
-                rows="14"
-                [placeholder]="bodyPlaceholder()"
-              ></textarea>
+            <div class="card-content flex flex-col gap-4">
+              <div class="match-group">
+                <div class="match-group__header">
+                  <div>
+                    <p class="match-group__label">Header rules</p>
+                    <p class="match-group__hint">Check request headers before this variant responds.</p>
+                  </div>
+                  <button class="btn btn-outline btn-xs" type="button" (click)="addMatchHeader()">Add</button>
+                </div>
 
-              <p class="mt-2 text-[11px] text-[rgb(var(--text-xmuted))]">
-                Handlebars supported:
-                <code class="font-mono">&#123;&#123;faker.uuid&#125;&#125;</code>
-                <code class="ml-1 font-mono">&#123;&#123;request.body.field&#125;&#125;</code>
-                <code class="ml-1 font-mono">&#123;&#123;request.params.id&#125;&#125;</code>
-              </p>
+                @if (matchHeaderRows().length === 0) {
+                  <p class="match-empty">No header rules yet.</p>
+                }
+
+                @for (entry of matchHeaderRows(); track $index; let i = $index) {
+                  <div class="match-row">
+                    <input
+                      class="input input-sm font-mono"
+                      [(ngModel)]="entry.key"
+                      [ngModelOptions]="{ standalone: true }"
+                      placeholder="Header name"
+                    />
+
+                    <select
+                      class="select match-row__mode"
+                      [(ngModel)]="entry.mode"
+                      [ngModelOptions]="{ standalone: true }"
+                    >
+                      @for (mode of matchRuleModes; track mode.value) {
+                        <option [ngValue]="mode.value">{{ mode.text }}</option>
+                      }
+                    </select>
+
+                    <input
+                      class="input input-sm"
+                      [class.match-row__value--disabled]="isRuleValueDisabled(entry.mode)"
+                      [(ngModel)]="entry.value"
+                      [ngModelOptions]="{ standalone: true }"
+                      [placeholder]="matchValuePlaceholder(entry.mode)"
+                      [disabled]="isRuleValueDisabled(entry.mode)"
+                    />
+
+                    <button class="btn btn-ghost btn-icon-sm" type="button" (click)="removeMatchHeader(i)"
+                            title="Remove header rule" style="color: rgb(var(--text-xmuted));">
+                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 6 6 18M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                }
+              </div>
+
+              <div class="match-group">
+                <div class="match-group__header">
+                  <div>
+                    <p class="match-group__label">Query rules</p>
+                    <p class="match-group__hint">Filter by query-string params like <span class="font-mono">?mode=test</span>.</p>
+                  </div>
+                  <button class="btn btn-outline btn-xs" type="button" (click)="addMatchQuery()">Add</button>
+                </div>
+
+                @if (matchQueryRows().length === 0) {
+                  <p class="match-empty">No query rules yet.</p>
+                }
+
+                @for (entry of matchQueryRows(); track $index; let i = $index) {
+                  <div class="match-row">
+                    <input
+                      class="input input-sm font-mono"
+                      [(ngModel)]="entry.key"
+                      [ngModelOptions]="{ standalone: true }"
+                      placeholder="Query param"
+                    />
+
+                    <select
+                      class="select match-row__mode"
+                      [(ngModel)]="entry.mode"
+                      [ngModelOptions]="{ standalone: true }"
+                    >
+                      @for (mode of matchRuleModes; track mode.value) {
+                        <option [ngValue]="mode.value">{{ mode.text }}</option>
+                      }
+                    </select>
+
+                    <input
+                      class="input input-sm"
+                      [class.match-row__value--disabled]="isRuleValueDisabled(entry.mode)"
+                      [(ngModel)]="entry.value"
+                      [ngModelOptions]="{ standalone: true }"
+                      [placeholder]="matchValuePlaceholder(entry.mode)"
+                      [disabled]="isRuleValueDisabled(entry.mode)"
+                    />
+
+                    <button class="btn btn-ghost btn-icon-sm" type="button" (click)="removeMatchQuery(i)"
+                            title="Remove query rule" style="color: rgb(var(--text-xmuted));">
+                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 6 6 18M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                }
+              </div>
             </div>
           </section>
 
-          <!-- ── Match rules (advanced) ─────────────────────────────────── -->
-          <details class="card">
-            <summary class="cursor-pointer select-none px-4 py-3 text-xs font-medium text-[rgb(var(--text-muted))] hover:text-[rgb(var(--text))]">
-              Match rules (advanced)
-            </summary>
-
-            <div class="border-t border-[rgb(var(--border))] p-4 space-y-4 text-xs">
+          <section class="card editor-section editor-section--full">
+            <header class="card-header flex flex-wrap items-start justify-between gap-3">
               <div>
-                <div class="mb-2 flex items-center justify-between">
-                  <span class="font-medium text-[rgb(var(--text-muted))]">Header match</span>
-                  <button class="btn btn-link btn-xs" type="button" (click)="addMatchHeader(v)">+ Add</button>
-                </div>
-                @for (entry of matchHeaderRows(v); track $index; let i = $index) {
-                  <div class="mb-1.5 flex items-center gap-2">
-                    <input class="input input-sm flex-1 font-mono"
-                           [(ngModel)]="entry.key" [ngModelOptions]="{ standalone: true }"
-                           placeholder="Header name" />
-                    <input class="input input-sm flex-1"
-                           [(ngModel)]="entry.value" [ngModelOptions]="{ standalone: true }"
-                           placeholder="present / !present / value" />
-                    <button class="btn btn-ghost btn-icon-sm" type="button" (click)="removeMatchHeader(v, i)"
-                            style="color: rgb(var(--text-xmuted));">✕</button>
-                  </div>
-                }
+                <h3 class="card-title">Body</h3>
+                <p class="text-xs text-[rgb(var(--text-muted))] mt-0.5">
+                  {{ bodyKindDetail().name }} response body with Handlebars templating support.
+                </p>
               </div>
+              <span class="editor-mini-badge">{{ bodyKindDetail().mimeType }}</span>
+            </header>
 
-              <div>
-                <div class="mb-2 flex items-center justify-between">
-                  <span class="font-medium text-[rgb(var(--text-muted))]">Query match</span>
-                  <button class="btn btn-link btn-xs" type="button" (click)="addMatchQuery(v)">+ Add</button>
-                </div>
-                @for (entry of matchQueryRows(v); track $index; let i = $index) {
-                  <div class="mb-1.5 flex items-center gap-2">
-                    <input class="input input-sm flex-1 font-mono"
-                           [(ngModel)]="entry.key" [ngModelOptions]="{ standalone: true }"
-                           placeholder="Param name" />
-                    <input class="input input-sm flex-1"
-                           [(ngModel)]="entry.value" [ngModelOptions]="{ standalone: true }"
-                           placeholder="exact-value or present" />
-                    <button class="btn btn-ghost btn-icon-sm" type="button" (click)="removeMatchQuery(v, i)"
-                            style="color: rgb(var(--text-xmuted));">✕</button>
+            <div class="card-content">
+              <div class="body-workbench">
+                <div #bodyEditorHost class="body-editor-host" aria-label="Response body editor"></div>
+
+                <aside class="body-sidebar">
+                  <div class="editor-note">
+                    <p class="editor-note__label">Selected format</p>
+                    <p class="editor-note__value">{{ bodyKindDetail().name }}</p>
+                    <p class="editor-note__caption">{{ bodyKindDetail().description }}</p>
                   </div>
-                }
+
+                  <div class="editor-note">
+                    <p class="editor-note__label">Template helpers</p>
+                    <details class="helper-disclosure">
+                      <summary class="helper-disclosure__summary">
+                        Show template helpers
+                      </summary>
+                      <div class="body-helper-list">
+                        @for (helper of bodyHelperSnippets; track helper.snippet) {
+                          <button type="button" class="helper-chip" (click)="insertBodySnippet(helper.snippet)">
+                            <span class="helper-chip__label">{{ helper.label }}</span>
+                            <code class="helper-chip__value">{{ helper.snippet }}</code>
+                          </button>
+                        }
+                      </div>
+                    </details>
+                  </div>
+                </aside>
               </div>
             </div>
-          </details>
+          </section>
 
-          <!-- ── Action row ─────────────────────────────────────────────── -->
-          <div class="flex items-center gap-3 border-t border-[rgb(var(--border))] pt-4">
+          <div class="editor-actions">
             @if (endpoint.forcedVariantId === v.id) {
-              <button class="btn btn-ghost btn-sm" type="button" (click)="forceVariant(null)"
+              <button class="btn btn-ghost editor-actions__btn" type="button" (click)="forceVariant(null)"
                       style="color: rgb(var(--status-4xx));">
                 ⚡ Remove forced
               </button>
             } @else {
-              <button class="btn btn-ghost btn-sm" type="button" (click)="forceVariant(v.id)">
+              <button class="btn btn-ghost editor-actions__btn" type="button" (click)="forceVariant(v.id)">
                 ⚡ Force this variant
               </button>
             }
 
             <div class="flex-1"></div>
 
-            <button class="btn btn-destructive-soft btn-sm" type="button" (click)="deleteVariant()">
+            <button class="btn btn-destructive-soft editor-actions__btn" type="button" (click)="deleteVariant()">
               Delete
             </button>
 
-            <button class="btn btn-sm" [disabled]="saving()" type="button" (click)="saveVariant()">
+            <button class="btn editor-actions__btn" [disabled]="saving()" type="button" (click)="saveVariant()">
               Save variant
             </button>
           </div>

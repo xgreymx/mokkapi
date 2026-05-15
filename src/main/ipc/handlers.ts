@@ -3,7 +3,7 @@
  * Part 2: wires in the real ServiceManager, HistoryStore, CertManager, and OpenAPI importer.
  */
 
-import type { IpcMain, BrowserWindow, Dialog, Shell } from 'electron';
+import { app, type IpcMain, type BrowserWindow, type Dialog, type Shell } from 'electron';
 import { IPC } from './channels';
 import type { WorkspaceManager } from '../workspace/workspace-manager';
 import type { ServiceManager } from '../servers/service-manager';
@@ -163,6 +163,8 @@ export function registerIpcHandlers(
   ipcMain.handle(IPC.UPDATE_SETTINGS, (_e, data) =>
     workspace.saveSettings(data),
   );
+
+  ipcMain.handle(IPC.GET_APP_VERSION, () => app.getVersion());
 
   // ── OpenAPI import ─────────────────────────────────────────────────────────
 

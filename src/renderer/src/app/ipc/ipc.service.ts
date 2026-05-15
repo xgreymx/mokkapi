@@ -80,6 +80,9 @@ export class IpcService {
   getSettings(): Promise<AppSettings> { return api().getSettings(); }
   updateSettings(data: Partial<AppSettings>): Promise<AppSettings> { return api().updateSettings(data); }
 
+  // ── App metadata ───────────────────────────────────────────────────────────
+  getAppVersion(): Promise<string> { return api().getAppVersion(); }
+
   // ── Import ─────────────────────────────────────────────────────────────────
   importOpenApi(filePath: string, targetServiceId?: string): Promise<ImportResult> {
     return api().importOpenApi(filePath, targetServiceId);

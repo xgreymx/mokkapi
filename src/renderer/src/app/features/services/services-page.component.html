@@ -1,11 +1,73 @@
 <div class="flex h-full overflow-hidden surface">
 
   <!-- ── Services sidebar ──────────────────────────────────────────── -->
-  <aside class="flex flex-col w-56 border-r border-[rgb(var(--border))] surface-sk overflow-hidden flex-shrink-0">
-    <div class="flex items-center justify-between px-3 py-2.5 border-b border-[rgb(var(--border))]">
-      <span class="text-[11px] font-semibold uppercase tracking-wider text-[rgb(var(--text-muted))]">
-        Services
-      </span>
+  @if (servicesRailVisible()) {
+      <aside class="rail-panel rail-panel--services flex flex-col w-56 border-r border-[rgb(var(--border))] surface-sk overflow-hidden flex-shrink-0"
+           [class.shadow-xl]="!showServicesRail()"
+        [class.rail-panel--peek]="!showServicesRail()"
+        (mouseenter)="scheduleServicesRailPeek()"
+        (mouseleave)="cancelServicesRailPeek()">
+      <div class="flex items-center justify-between px-3 py-2.5 border-b border-[rgb(var(--border))]">
+        <span class="text-[11px] font-semibold uppercase tracking-wider text-[rgb(var(--text-muted))]">
+          Services
+        </span>
+        <div class="flex items-center gap-1">
+          <button class="btn btn-ghost btn-icon-sm" (click)="showNewServiceForm.set(true)" title="New service"
+                  style="color: rgb(var(--primary));">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+          </button>
+            <button class="btn btn-ghost btn-icon-sm" type="button" (click)="toggleServicesRail()"
+              [title]="showServicesRail() ? 'Collapse services' : 'Pin services open'">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m15 18-6-6 6-6"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto scrollbar-thin py-1">
+        @if (store.services().length === 0) {
+          <div class="flex flex-col items-center justify-center gap-3 py-10 px-4 text-center">
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="none"
+                 stroke="currentColor" stroke-width="1.25"
+                 class="text-[rgb(var(--text-xmuted))]"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+            <p class="text-xs text-[rgb(var(--text-muted))]">No services yet</p>
+            <button class="btn btn-link btn-xs" (click)="showNewServiceForm.set(true)">
+              Create your first service
+            </button>
+          </div>
+        }
+
+        @for (svc of store.servicesWithStatus(); track svc.id) {
+          <button
+            (click)="selectService(svc.id)"
+            class="service-row"
+            [class.service-row--active]="store.selectedServiceId() === svc.id"
+          >
+            <span [class]="statusDotClass(svc.status.status) + ' flex-shrink-0'"></span>
+            <span class="flex-1 truncate font-medium text-left">{{ svc.name }}</span>
+            <span class="font-mono text-[11px] text-[rgb(var(--text-xmuted))] flex-shrink-0">:{{ svc.port }}</span>
+          </button>
+        }
+      </div>
+    </aside>
+  } @else {
+      <aside class="rail-collapsed flex w-12 shrink-0 flex-col items-center gap-2 border-r border-[rgb(var(--border))] surface-sk px-1 py-2"
+        (mouseenter)="scheduleServicesRailPeek()"
+        (mouseleave)="cancelServicesRailPeek()">
+      <button class="btn btn-ghost btn-icon-sm" type="button" (click)="toggleServicesRail()" title="Expand services">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m9 18 6-6-6-6"/>
+        </svg>
+      </button>
       <button class="btn btn-ghost btn-icon-sm" (click)="showNewServiceForm.set(true)" title="New service"
               style="color: rgb(var(--primary));">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none"
@@ -13,119 +75,146 @@
           <path d="M12 5v14M5 12h14"/>
         </svg>
       </button>
-    </div>
+      <span class="rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-1.5 py-0.5 text-[10px] font-semibold text-[rgb(var(--text-muted))]">
+        {{ store.services().length }}
+      </span>
+      @for (item of listeningPorts().slice(0, 3); track item.id) {
+        <span class="rounded-full border border-[rgb(var(--status-2xx)/0.35)] bg-[rgb(var(--status-2xx)/0.1)] px-1 py-0.5 text-[9px] font-mono font-semibold text-[rgb(var(--status-2xx))]">
+          :{{ item.port }}
+        </span>
+      }
+      @if (listeningPorts().length > 3) {
+        <span class="rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-1 py-0.5 text-[9px] font-semibold text-[rgb(var(--text-muted))]">
+          +{{ listeningPorts().length - 3 }}
+        </span>
+      }
+    </aside>
+  }
 
-    <div class="flex-1 overflow-y-auto scrollbar-thin py-1">
-      @if (store.services().length === 0) {
-        <div class="flex flex-col items-center justify-center gap-3 py-10 px-4 text-center">
-          <svg viewBox="0 0 24 24" width="32" height="32" fill="none"
-               stroke="currentColor" stroke-width="1.25"
-               class="text-[rgb(var(--text-xmuted))]"
+  <!-- ── Endpoint list ─────────────────────────────────────────────── -->
+  @if (endpointsRailVisible()) {
+      <div class="rail-panel rail-panel--endpoints flex flex-col w-72 border-r border-[rgb(var(--border))] surface overflow-hidden flex-shrink-0"
+         [class.shadow-xl]="!showEndpointsRail()"
+        [class.rail-panel--peek]="!showEndpointsRail()"
+        (mouseenter)="scheduleEndpointsRailPeek()"
+        (mouseleave)="cancelEndpointsRailPeek()">
+      <div class="flex items-center justify-between px-3 py-2 border-b border-[rgb(var(--border))] surface-el flex-shrink-0 gap-2">
+        @if (!store.selectedService()) {
+          <div class="min-w-0">
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-[rgb(var(--text-muted))]">Endpoints</p>
+            <p class="text-[11px] text-[rgb(var(--text-xmuted))]">Select a service first</p>
+          </div>
+            <button class="btn btn-ghost btn-icon-sm" type="button" (click)="toggleEndpointsRail()"
+              [title]="showEndpointsRail() ? 'Collapse endpoints' : 'Pin endpoints open'">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m15 18-6-6 6-6"/>
+            </svg>
+          </button>
+        } @else {
+          <div class="flex items-center gap-1.5 min-w-0">
+            <span [class]="statusDotClass(store.selectedService()!.status.status)"></span>
+            <span class="text-[11px] font-mono text-[rgb(var(--text-muted))] truncate">
+              :{{ store.selectedService()!.port }}
+            </span>
+          </div>
+
+          <div class="flex items-center gap-1.5 flex-shrink-0">
+            @if (store.selectedService()!.status.status !== 'running') {
+              <button class="btn btn-success-soft btn-xs" (click)="startService()">
+                <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor">
+                  <path d="M5 3l14 9L5 21V3z"/>
+                </svg>
+                Start
+              </button>
+            } @else {
+              <button class="btn btn-destructive-soft btn-xs" (click)="stopService()">
+                <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor">
+                  <rect x="6" y="6" width="12" height="12"/>
+                </svg>
+                Stop
+              </button>
+            }
+            <button class="btn btn-ghost btn-icon-sm" (click)="addEndpoint()" title="Add endpoint">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none"
+                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 5v14M5 12h14"/>
+              </svg>
+            </button>
+                <button class="btn btn-ghost btn-icon-sm" type="button" (click)="toggleEndpointsRail()"
+                  [title]="showEndpointsRail() ? 'Collapse endpoints' : 'Pin endpoints open'">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none"
+                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m15 18-6-6 6-6"/>
+              </svg>
+            </button>
+          </div>
+        }
+      </div>
+
+      @if (!store.selectedService()) {
+        <div class="flex flex-col items-center justify-center h-full gap-3 text-center px-6">
+          <svg viewBox="0 0 24 24" width="40" height="40" fill="none"
+               stroke="currentColor" stroke-width="1"
+               class="text-[rgb(var(--border-strong))]"
                stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
           </svg>
-          <p class="text-xs text-[rgb(var(--text-muted))]">No services yet</p>
-          <button class="btn btn-link btn-xs" (click)="showNewServiceForm.set(true)">
-            Create your first service
-          </button>
+          <p class="text-xs text-[rgb(var(--text-muted))]">
+            Select a service to view its endpoints
+          </p>
         </div>
-      }
+      } @else {
+        <div class="flex-1 overflow-y-auto scrollbar-thin">
+          @if (store.selectedService()!.endpoints.length === 0) {
+            <div class="flex flex-col items-center justify-center h-40 gap-2 px-4">
+              <p class="text-xs text-[rgb(var(--text-muted))] text-center">
+                No endpoints yet.<br>Add one or import an OpenAPI spec.
+              </p>
+            </div>
+          }
 
-      @for (svc of store.servicesWithStatus(); track svc.id) {
-        <button
-          (click)="selectService(svc.id)"
-          class="service-row"
-          [class.service-row--active]="store.selectedServiceId() === svc.id"
-        >
-          <span [class]="statusDotClass(svc.status.status) + ' flex-shrink-0'"></span>
-          <span class="flex-1 truncate font-medium text-left">{{ svc.name }}</span>
-          <span class="font-mono text-[11px] text-[rgb(var(--text-xmuted))] flex-shrink-0">:{{ svc.port }}</span>
-        </button>
-      }
-    </div>
-  </aside>
-
-  <!-- ── Endpoint list ─────────────────────────────────────────────── -->
-  <div class="flex flex-col w-72 border-r border-[rgb(var(--border))] surface overflow-hidden flex-shrink-0">
-
-    @if (!store.selectedService()) {
-      <div class="flex flex-col items-center justify-center h-full gap-3 text-center px-6">
-        <svg viewBox="0 0 24 24" width="40" height="40" fill="none"
-             stroke="currentColor" stroke-width="1"
-             class="text-[rgb(var(--border-strong))]"
-             stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-        </svg>
-        <p class="text-xs text-[rgb(var(--text-muted))]">
-          Select a service to view its endpoints
-        </p>
-      </div>
-    } @else {
-      <!-- Service header -->
-      <div class="flex items-center justify-between px-3 py-2 border-b border-[rgb(var(--border))] surface-el flex-shrink-0">
-        <div class="flex items-center gap-1.5 min-w-0">
-          <span [class]="statusDotClass(store.selectedService()!.status.status)"></span>
-          <span class="text-[11px] font-mono text-[rgb(var(--text-muted))] truncate">
-            :{{ store.selectedService()!.port }}
-          </span>
-        </div>
-
-        <div class="flex items-center gap-1.5 flex-shrink-0">
-          @if (store.selectedService()!.status.status !== 'running') {
-            <button class="btn btn-success-soft btn-xs" (click)="startService()">
-              <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor">
-                <path d="M5 3l14 9L5 21V3z"/>
-              </svg>
-              Start
-            </button>
-          } @else {
-            <button class="btn btn-destructive-soft btn-xs" (click)="stopService()">
-              <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor">
-                <rect x="6" y="6" width="12" height="12"/>
-              </svg>
-              Stop
+          @for (ep of store.selectedService()!.endpoints; track ep.id) {
+            <button
+              (click)="selectedEndpointId.set(ep.id)"
+              class="endpoint-row"
+              [class.endpoint-row--active]="selectedEndpointId() === ep.id"
+            >
+              <span [class]="'badge-method badge-' + ep.method.toLowerCase() + ' flex-shrink-0'">
+                {{ ep.method }}
+              </span>
+              <span class="flex-1 text-xs font-mono truncate text-left">{{ ep.path }}</span>
+              @if (activeVariantStatus(ep); as code) {
+                <span class="text-[10.5px] font-mono px-1.5 py-0.5 rounded flex-shrink-0"
+                      [class]="statusCodeClass(code)">
+                  {{ code }}
+                </span>
+              }
             </button>
           }
-          <button class="btn btn-ghost btn-icon-sm" (click)="addEndpoint()" title="Add endpoint">
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none"
-                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 5v14M5 12h14"/>
-            </svg>
-          </button>
         </div>
-      </div>
-
-      <!-- Endpoint rows -->
-      <div class="flex-1 overflow-y-auto scrollbar-thin">
-        @if (store.selectedService()!.endpoints.length === 0) {
-          <div class="flex flex-col items-center justify-center h-40 gap-2 px-4">
-            <p class="text-xs text-[rgb(var(--text-muted))] text-center">
-              No endpoints yet.<br>Add one or import an OpenAPI spec.
-            </p>
-          </div>
-        }
-
-        @for (ep of store.selectedService()!.endpoints; track ep.id) {
-          <button
-            (click)="selectedEndpointId.set(ep.id)"
-            class="endpoint-row"
-            [class.endpoint-row--active]="selectedEndpointId() === ep.id"
-          >
-            <span [class]="'badge-method badge-' + ep.method.toLowerCase() + ' flex-shrink-0'">
-              {{ ep.method }}
-            </span>
-            <span class="flex-1 text-xs font-mono truncate text-left">{{ ep.path }}</span>
-            @if (activeVariantStatus(ep); as code) {
-              <span class="text-[10.5px] font-mono px-1.5 py-0.5 rounded flex-shrink-0"
-                    [class]="statusCodeClass(code)">
-                {{ code }}
-              </span>
-            }
-          </button>
-        }
-      </div>
-    }
-  </div>
+      }
+    </div>
+  } @else {
+      <div class="rail-collapsed flex w-12 shrink-0 flex-col items-center gap-2 border-r border-[rgb(var(--border))] surface px-1 py-2"
+        (mouseenter)="scheduleEndpointsRailPeek()"
+        (mouseleave)="cancelEndpointsRailPeek()">
+      <button class="btn btn-ghost btn-icon-sm" type="button" (click)="toggleEndpointsRail()" title="Expand endpoints">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m9 18 6-6-6-6"/>
+        </svg>
+      </button>
+      @if (store.selectedService()) {
+        <span class="rounded-full border border-[rgb(var(--status-2xx)/0.3)] bg-[rgb(var(--status-2xx)/0.1)] px-1 py-0.5 text-[9px] font-mono font-semibold text-[rgb(var(--status-2xx))]">
+          :{{ store.selectedService()!.port }}
+        </span>
+        <span class="rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--bg))] px-1.5 py-0.5 text-[10px] font-semibold text-[rgb(var(--text-muted))]">
+          {{ store.selectedService()!.endpoints.length }}
+        </span>
+      }
+    </div>
+  }
 
   <!-- ── Endpoint editor ───────────────────────────────────────────── -->
   <div class="flex-1 overflow-hidden">
@@ -133,6 +222,8 @@
       <app-endpoint-editor
         [serviceId]="store.selectedServiceId()!"
         [endpoint]="selectedEndpoint()!"
+        [availableScenarios]="store.selectedService()!.scenarios"
+        [activeScenario]="store.selectedService()!.activeScenario"
         (endpointChanged)="onEndpointChanged()"
         (endpointDeleted)="onEndpointDeleted()"
       />

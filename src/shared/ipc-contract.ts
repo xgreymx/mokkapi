@@ -55,6 +55,9 @@ export const IPC = {
   GET_SETTINGS:    'settings:get',
   UPDATE_SETTINGS: 'settings:update',
 
+  // App metadata
+  GET_APP_VERSION: 'app:get-version',
+
   // OpenAPI import
   IMPORT_OPENAPI:      'import:openapi',
   OPEN_IMPORT_DIALOG:  'import:open-dialog', // returns picked file path
@@ -109,6 +112,9 @@ export interface MokkApiElectron {
   // Settings
   getSettings(): Promise<AppSettings>;
   updateSettings(data: Partial<AppSettings>): Promise<AppSettings>;
+
+  // App metadata
+  getAppVersion(): Promise<string>;
 
   // Import
   importOpenApi(filePath: string, targetServiceId?: string): Promise<ImportResult>;

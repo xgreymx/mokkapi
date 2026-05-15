@@ -4,6 +4,7 @@ import {
   signal,
   computed,
   ChangeDetectionStrategy,
+  OnDestroy,
 } from '@angular/core';
 import { WorkspaceStore } from '../../data/workspace.store';
 import { IpcService } from '../../ipc/ipc.service';
@@ -16,19 +17,36 @@ import type { Endpoint } from '@shared/models';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [EndpointEditorComponent],
   templateUrl: './services-page.component.html',
+  styleUrl: './services-page.component.css',
 })
-export class ServicesPageComponent {
+export class ServicesPageComponent implements OnDestroy {
   protected readonly store = inject(WorkspaceStore);
   protected readonly ipc = inject(IpcService);
 
   protected readonly showNewServiceForm = signal(false);
+  protected readonly showServicesRail = signal(true);
+  protected readonly showEndpointsRail = signal(true);
+  protected readonly peekServicesRail = signal(false);
+  protected readonly peekEndpointsRail = signal(false);
   protected readonly selectedEndpointId = signal<string | null>(null);
+  protected readonly servicesRailVisible = computed(() => this.showServicesRail() || this.peekServicesRail());
+  protected readonly endpointsRailVisible = computed(() => this.showEndpointsRail() || this.peekEndpointsRail());
+
+  private servicesRailPeekTimer: ReturnType<typeof setTimeout> | null = null;
+  private endpointsRailPeekTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly railPeekDelayMs = 260;
 
   protected readonly selectedEndpoint = computed(() => {
     const id = this.selectedEndpointId();
     if (!id) return null;
     return this.store.selectedService()?.endpoints.find((e) => e.id === id) ?? null;
   });
+
+  protected readonly listeningPorts = computed(() =>
+    this.store.servicesWithStatus()
+      .filter((service) => service.status.status === 'running')
+      .map((service) => ({ id: service.id, port: service.port })),
+  );
 
   protected readonly nextPort = computed(() => {
     const ports = this.store.services().map((s) => s.port);
@@ -41,6 +59,70 @@ export class ServicesPageComponent {
   protected selectService(id: string): void {
     this.store.selectService(id);
     this.selectedEndpointId.set(null);
+    this.showEndpointsRail.set(true);
+  }
+
+  protected toggleServicesRail(): void {
+    const next = !this.showServicesRail();
+    this.showServicesRail.set(next);
+    if (next) this.peekServicesRail.set(false);
+    this.clearServicesRailPeekTimer();
+  }
+
+  protected toggleEndpointsRail(): void {
+    const next = !this.showEndpointsRail();
+    this.showEndpointsRail.set(next);
+    if (next) this.peekEndpointsRail.set(false);
+    this.clearEndpointsRailPeekTimer();
+  }
+
+  ngOnDestroy(): void {
+    this.clearServicesRailPeekTimer();
+    this.clearEndpointsRailPeekTimer();
+  }
+
+  protected scheduleServicesRailPeek(): void {
+    if (this.showServicesRail() || this.peekServicesRail()) return;
+    this.clearServicesRailPeekTimer();
+    this.servicesRailPeekTimer = window.setTimeout(() => {
+      this.peekServicesRail.set(true);
+      this.servicesRailPeekTimer = null;
+    }, this.railPeekDelayMs);
+  }
+
+  protected cancelServicesRailPeek(): void {
+    this.clearServicesRailPeekTimer();
+    if (!this.showServicesRail()) {
+      this.peekServicesRail.set(false);
+    }
+  }
+
+  protected scheduleEndpointsRailPeek(): void {
+    if (this.showEndpointsRail() || this.peekEndpointsRail()) return;
+    this.clearEndpointsRailPeekTimer();
+    this.endpointsRailPeekTimer = window.setTimeout(() => {
+      this.peekEndpointsRail.set(true);
+      this.endpointsRailPeekTimer = null;
+    }, this.railPeekDelayMs);
+  }
+
+  protected cancelEndpointsRailPeek(): void {
+    this.clearEndpointsRailPeekTimer();
+    if (!this.showEndpointsRail()) {
+      this.peekEndpointsRail.set(false);
+    }
+  }
+
+  private clearServicesRailPeekTimer(): void {
+    if (this.servicesRailPeekTimer === null) return;
+    clearTimeout(this.servicesRailPeekTimer);
+    this.servicesRailPeekTimer = null;
+  }
+
+  private clearEndpointsRailPeekTimer(): void {
+    if (this.endpointsRailPeekTimer === null) return;
+    clearTimeout(this.endpointsRailPeekTimer);
+    this.endpointsRailPeekTimer = null;
   }
 
   protected statusDotClass(status: string): string {
@@ -70,6 +152,7 @@ export class ServicesPageComponent {
   protected async addEndpoint(): Promise<void> {
     const serviceId = this.store.selectedServiceId();
     if (!serviceId) return;
+    this.showEndpointsRail.set(true);
     const ep = await this.ipc.createEndpoint(serviceId, {
       method: 'GET',
       path: '/new-endpoint',
@@ -103,6 +186,8 @@ export class ServicesPageComponent {
       enabled: true,
     });
     this.showNewServiceForm.set(false);
+    this.showServicesRail.set(true);
+    this.showEndpointsRail.set(true);
     const lastId = this.store.services().at(-1)?.id ?? null;
     this.store.selectService(lastId);
   }

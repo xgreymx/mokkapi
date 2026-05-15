@@ -31,6 +31,7 @@ export class SettingsPageComponent implements OnInit {
   protected retentionDays = 30;
   protected retentionRows = 100_000;
   protected readonly caPath = signal('');
+  protected readonly appVersion = signal('');
 
   protected readonly themeOptions: { label: string; value: AppTheme }[] = [
     { label: 'System', value: 'system' },
@@ -46,6 +47,7 @@ export class SettingsPageComponent implements OnInit {
       this.retentionRows = s.historyRetentionRows;
     }
     this.caPath.set(await this.ipc.getCaPath());
+    this.appVersion.set(await this.ipc.getAppVersion());
   }
 
   protected setTheme(theme: AppTheme): void {

@@ -48,6 +48,9 @@ const mokkapi: MokkApiElectron = {
   getSettings: () => ipcRenderer.invoke(IPC.GET_SETTINGS),
   updateSettings: (data) => ipcRenderer.invoke(IPC.UPDATE_SETTINGS, data),
 
+  // ── App metadata ───────────────────────────────────────────────────────────
+  getAppVersion: () => ipcRenderer.invoke(IPC.GET_APP_VERSION),
+
   // ── Import ─────────────────────────────────────────────────────────────────
   importOpenApi: (filePath, targetServiceId) =>
     ipcRenderer.invoke(IPC.IMPORT_OPENAPI, { filePath, targetServiceId }),

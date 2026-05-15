@@ -122,7 +122,9 @@
     <div class="card px-4 py-3 flex items-center justify-between">
       <div>
         <p class="text-sm font-medium">mokkapi</p>
-        <p class="text-xs text-[rgb(var(--text-muted))]">v0.1.0 — local-first Mock API workbench</p>
+        <p class="text-xs text-[rgb(var(--text-muted))]">
+          v{{ appVersion() || '…' }} — local-first Mock API workbench
+        </p>
       </div>
       <a href="https://github.com" target="_blank"
          class="text-xs hover:underline" style="color: rgb(var(--primary));">
