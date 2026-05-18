@@ -72,7 +72,7 @@ app.whenReady().then(async () => {
     mainWindow?.webContents.send(IPC.EVT_REQUEST_RECEIVED, entry);
   };
 
-  services = new ServiceManager(workspace, history, broadcastStatus, broadcastHistory);
+  services = new ServiceManager(workspace, history, certMgr, broadcastStatus, broadcastHistory);
   await services.init();
 
   // Broadcast workspace changes caused by external file edits

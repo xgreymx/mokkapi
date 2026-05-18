@@ -9,7 +9,7 @@ import {
 import { WorkspaceStore } from '../../data/workspace.store';
 import { IpcService } from '../../ipc/ipc.service';
 import { EndpointEditorComponent } from './endpoint-editor.component';
-import type { Endpoint } from '@shared/models';
+import type { Endpoint, ServiceProtocol } from '@shared/models';
 
 @Component({
   selector: 'app-services-page',
@@ -29,6 +29,7 @@ export class ServicesPageComponent implements OnDestroy {
   protected readonly peekServicesRail = signal(false);
   protected readonly peekEndpointsRail = signal(false);
   protected readonly selectedEndpointId = signal<string | null>(null);
+  protected readonly newProtocol = signal<ServiceProtocol>('http');
   protected readonly servicesRailVisible = computed(() => this.showServicesRail() || this.peekServicesRail());
   protected readonly endpointsRailVisible = computed(() => this.showEndpointsRail() || this.peekEndpointsRail());
 
@@ -178,13 +179,14 @@ export class ServicesPageComponent implements OnDestroy {
     await this.store.createService({
       name: name.trim(),
       port,
-      protocol: 'http',
+      protocol: this.newProtocol(),
       tls: { mode: 'auto', certPath: null, keyPath: null, additionalHosts: [] },
       cors: { allowedOrigins: ['*'] },
       scenarios: ['Default'],
       activeScenario: 'Default',
       enabled: true,
     });
+    this.newProtocol.set('http');
     this.showNewServiceForm.set(false);
     this.showServicesRail.set(true);
     this.showEndpointsRail.set(true);
