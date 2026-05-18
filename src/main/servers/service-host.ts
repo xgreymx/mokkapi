@@ -10,6 +10,7 @@ import { matchRequest } from './matcher';
 import { renderBody, defaultContentType } from './renderer';
 import type { Service, ServiceRuntimeStatus, HistoryEntry } from '../../shared/models';
 import type { HistoryStore } from '../history/history-store';
+import type { CertManager } from './cert-manager';
 
 const HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options'] as const;
 
@@ -21,6 +22,7 @@ export class ServiceHost {
   constructor(
     service: Service,
     private readonly history: HistoryStore,
+    private readonly certs: CertManager,
     private readonly onEntry: (entry: HistoryEntry) => void,
   ) {
     this._service = service;
@@ -43,12 +45,25 @@ export class ServiceHost {
 
     this.status = { serviceId: this._service.id, status: 'starting' };
 
+    let httpsOpts: { key: string; cert: string } | null = null;
+    if (this._service.protocol === 'https') {
+      try {
+        const creds = await this.certs.resolveTls(this._service.id, this._service.tls);
+        httpsOpts = { key: creds.key, cert: creds.cert };
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.status = { serviceId: this._service.id, status: 'error', error: `TLS: ${msg}` };
+        throw new Error(`TLS for service '${this._service.id}': ${msg}`);
+      }
+    }
+
     const app = Fastify({
       logger: false,
       routerOptions: {
         ignoreTrailingSlash: true,
       },
       exposeHeadRoutes: false,
+      ...(httpsOpts ? { https: httpsOpts } : {}),
     });
 
     // Accept any content-type as a raw string so we can inspect and log it
@@ -177,7 +192,7 @@ export class ServiceHost {
     try {
       await app.listen({ port: this._service.port, host: '0.0.0.0' });
       this.status = { serviceId: this._service.id, status: 'running', port: this._service.port };
-      console.log(`[ServiceHost] "${this._service.name}" running on :${this._service.port}`);
+      console.log(`[ServiceHost] "${this._service.name}" running on ${this._service.protocol}://0.0.0.0:${this._service.port}`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       this.status = { serviceId: this._service.id, status: 'error', error: msg };

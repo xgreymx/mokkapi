@@ -7,6 +7,7 @@
 import { ServiceHost } from './service-host';
 import type { WorkspaceManager } from '../workspace/workspace-manager';
 import type { HistoryStore } from '../history/history-store';
+import type { CertManager } from './cert-manager';
 import type { HistoryEntry, ServiceRuntimeStatus } from '../../shared/models';
 
 type StatusBroadcast = (status: ServiceRuntimeStatus) => void;
@@ -18,6 +19,7 @@ export class ServiceManager {
   constructor(
     private readonly workspace: WorkspaceManager,
     private readonly history: HistoryStore,
+    private readonly certs: CertManager,
     private readonly broadcastStatus: StatusBroadcast,
     private readonly broadcastHistory: HistoryBroadcast,
   ) {}
@@ -72,7 +74,7 @@ export class ServiceManager {
 
     let host = this.hosts.get(serviceId);
     if (!host) {
-      host = new ServiceHost(svc, this.history, (entry) => {
+      host = new ServiceHost(svc, this.history, this.certs, (entry) => {
         this.broadcastHistory(entry);
       });
       this.hosts.set(serviceId, host);
