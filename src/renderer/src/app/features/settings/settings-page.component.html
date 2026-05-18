@@ -87,6 +87,26 @@
     </div>
   </section>
 
+  <!-- ── Onboarding ──────────────────────────────────────────────────── -->
+  <section class="mb-8">
+    <h2 class="text-[11px] font-semibold uppercase tracking-wider text-[rgb(var(--text-muted))] mb-3">
+      Onboarding
+    </h2>
+    <div class="card divide-y divide-[rgb(var(--border))]">
+      <div class="flex items-center justify-between px-4 py-3 gap-4">
+        <div>
+          <p class="text-sm font-medium">Quick tour</p>
+          <p class="text-xs text-[rgb(var(--text-muted))]">
+            Replay the short introduction to the main areas of the app.
+          </p>
+        </div>
+        <button class="btn btn-outline btn-sm" (click)="onboarding.start()">
+          Replay onboarding
+        </button>
+      </div>
+    </div>
+  </section>
+
   <!-- ── HTTPS / Certificate Authority ──────────────────────────────── -->
   <section class="mb-8">
     <h2 class="text-[11px] font-semibold uppercase tracking-wider text-[rgb(var(--text-muted))] mb-3">
@@ -94,14 +114,53 @@
     </h2>
     <div class="card divide-y divide-[rgb(var(--border))]">
 
+      @if (certTrust.feedback(); as feedback) {
+        <div class="px-4 py-3">
+          <div class="flex items-start justify-between gap-3 rounded-lg border px-3 py-2"
+               [class]="feedback.kind === 'success'
+                 ? 'border-[rgb(var(--status-2xx))/0.28] bg-[rgb(var(--status-2xx))/0.08]'
+                 : feedback.kind === 'error'
+                   ? 'border-[rgb(var(--status-5xx))/0.28] bg-[rgb(var(--status-5xx))/0.08]'
+                   : 'border-[rgb(var(--primary))/0.24] bg-[rgb(var(--primary))/0.08]'">
+            <p class="text-xs text-[rgb(var(--text))] leading-5">{{ feedback.message }}</p>
+            <button class="btn btn-ghost btn-icon-sm flex-shrink-0" type="button" (click)="certTrust.clearFeedback()" title="Dismiss message">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none"
+                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 6 6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      }
+
+      <div class="flex items-center justify-between px-4 py-3 gap-4">
+        <div>
+          <p class="text-sm font-medium">Trust status</p>
+          <p class="text-xs text-[rgb(var(--text-muted))] mt-0.5">
+            {{ certTrust.loading() ? 'Checking the local CA…' : certTrust.status()?.message }}
+          </p>
+          @if (certTrust.status(); as status) {
+            <p class="text-[11px] text-[rgb(var(--text-xmuted))] mt-1">
+              Store: {{ status.storeLabel }}
+            </p>
+          }
+        </div>
+        <button class="btn btn-outline btn-sm"
+                (click)="certTrust.install()"
+                [disabled]="certTrust.installing() || certTrust.loading() || !certTrust.status()?.supported || !!certTrust.status()?.installed">
+          {{ certTrust.installing() ? 'Installing…' : certTrust.status()?.installed ? 'Installed' : 'Install automatically' }}
+        </button>
+      </div>
+
       <div class="flex items-center justify-between px-4 py-3">
         <div>
           <p class="text-sm font-medium">Local CA certificate</p>
           <p class="text-xs text-[rgb(var(--text-muted))] font-mono mt-0.5 truncate max-w-xs">
-            {{ caPath() }}
+            {{ certTrust.status()?.caPath || 'Loading…' }}
           </p>
         </div>
         <button class="btn btn-outline btn-sm" (click)="regenerateCa()"
+                [disabled]="certTrust.loading() || certTrust.installing()"
                 style="color: rgb(var(--status-4xx)); border-color: rgb(var(--status-4xx) / 0.4);">
           Regenerate CA
         </button>
@@ -110,8 +169,8 @@
       <div class="px-4 py-3">
         <p class="text-xs font-medium mb-2">Trust the CA (once, per machine)</p>
         <div class="rounded surface border border-[rgb(var(--border))] px-3 py-2">
-          <p class="text-xs font-mono text-[rgb(var(--text-muted))] mb-1">Windows (PowerShell as admin):</p>
-          <pre class="text-xs font-mono whitespace-pre-wrap break-all">certutil -addstore Root "{{ caPath() }}"</pre>
+          <p class="text-xs font-mono text-[rgb(var(--text-muted))] mb-1">{{ certTrust.status()?.manualInstallLabel || 'Manual trust:' }}</p>
+          <pre class="text-xs font-mono whitespace-pre-wrap break-all">{{ certTrust.status()?.manualInstallCommand || 'Loading…' }}</pre>
         </div>
       </div>
     </div>

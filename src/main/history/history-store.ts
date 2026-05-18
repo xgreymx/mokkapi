@@ -136,6 +136,10 @@ export class HistoryStore {
     }
   }
 
+  delete(entryId: number): void {
+    this.db.prepare('DELETE FROM requests WHERE id = ?').run(entryId);
+  }
+
   /** Trim old rows according to retention settings — call on app startup */
   trim(settings: Pick<AppSettings, 'historyRetentionDays' | 'historyRetentionRows'>): void {
     const cutoff = Date.now() - settings.historyRetentionDays * 86_400_000;

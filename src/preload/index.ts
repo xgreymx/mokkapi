@@ -43,6 +43,7 @@ const mokkapi: MokkApiElectron = {
   // ── History ────────────────────────────────────────────────────────────────
   queryHistory: (filter) => ipcRenderer.invoke(IPC.QUERY_HISTORY, filter),
   clearHistory: (serviceId) => ipcRenderer.invoke(IPC.CLEAR_HISTORY, { serviceId }),
+  deleteHistoryEntry: (entryId) => ipcRenderer.invoke(IPC.DELETE_HISTORY_ENTRY, { entryId }),
 
   // ── Settings ───────────────────────────────────────────────────────────────
   getSettings: () => ipcRenderer.invoke(IPC.GET_SETTINGS),
@@ -62,6 +63,8 @@ const mokkapi: MokkApiElectron = {
   // ── Shell helpers ──────────────────────────────────────────────────────────
   openWorkspaceFolder: () => ipcRenderer.invoke(IPC.OPEN_WORKSPACE_FOLDER),
   getCaPath: () => ipcRenderer.invoke(IPC.GET_CA_PATH),
+  getCaTrustStatus: () => ipcRenderer.invoke(IPC.GET_CA_TRUST_STATUS),
+  installCa: () => ipcRenderer.invoke(IPC.INSTALL_CA),
   regenerateCa: () => ipcRenderer.invoke(IPC.REGENERATE_CA),
   openFileDialog: (options) => ipcRenderer.invoke(IPC.OPEN_FILE_DIALOG, options),
 

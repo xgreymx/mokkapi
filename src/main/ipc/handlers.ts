@@ -156,6 +156,10 @@ export function registerIpcHandlers(
     history.clear(serviceId);
   });
 
+  ipcMain.handle(IPC.DELETE_HISTORY_ENTRY, (_e, { entryId }: { entryId: number }) => {
+    history.delete(entryId);
+  });
+
   // ── Settings ───────────────────────────────────────────────────────────────
 
   ipcMain.handle(IPC.GET_SETTINGS, () => workspace.getSettings());
@@ -224,6 +228,10 @@ export function registerIpcHandlers(
   );
 
   ipcMain.handle(IPC.GET_CA_PATH, () => certMgr.getCaPath());
+
+  ipcMain.handle(IPC.GET_CA_TRUST_STATUS, () => certMgr.getCaTrustStatus());
+
+  ipcMain.handle(IPC.INSTALL_CA, () => certMgr.installCa());
 
   ipcMain.handle(IPC.REGENERATE_CA, () => certMgr.generateCa());
 

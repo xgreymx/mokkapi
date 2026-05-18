@@ -409,6 +409,11 @@
     background-color: rgb(var(--bg-elevated));
     color: rgb(var(--primary));
   }
+  .rail-btn--guide {
+    background-color: rgb(var(--bg-elevated));
+    color: rgb(var(--primary));
+    box-shadow: 0 0 0 1px rgb(var(--primary) / 0.25), 0 0 0 4px rgb(var(--primary) / 0.12);
+  }
 
   /* ─ Scrollbars ─ */
   .scrollbar-thin {

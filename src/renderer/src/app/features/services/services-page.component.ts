@@ -6,6 +6,7 @@ import {
   ChangeDetectionStrategy,
   OnDestroy,
 } from '@angular/core';
+import { CertificateTrustService } from '../../data/certificate-trust.service';
 import { WorkspaceStore } from '../../data/workspace.store';
 import { IpcService } from '../../ipc/ipc.service';
 import { EndpointEditorComponent } from './endpoint-editor.component';
@@ -20,16 +21,19 @@ import type { Endpoint, ServiceProtocol } from '@shared/models';
   styleUrl: './services-page.component.css',
 })
 export class ServicesPageComponent implements OnDestroy {
+  protected readonly caTrust = inject(CertificateTrustService);
   protected readonly store = inject(WorkspaceStore);
   protected readonly ipc = inject(IpcService);
 
   protected readonly showNewServiceForm = signal(false);
+  protected readonly showEditServiceForm = signal(false);
   protected readonly showServicesRail = signal(true);
   protected readonly showEndpointsRail = signal(true);
   protected readonly peekServicesRail = signal(false);
   protected readonly peekEndpointsRail = signal(false);
   protected readonly selectedEndpointId = signal<string | null>(null);
   protected readonly newProtocol = signal<ServiceProtocol>('http');
+  protected readonly editProtocol = signal<ServiceProtocol>('http');
   protected readonly servicesRailVisible = computed(() => this.showServicesRail() || this.peekServicesRail());
   protected readonly endpointsRailVisible = computed(() => this.showEndpointsRail() || this.peekEndpointsRail());
 
@@ -192,6 +196,31 @@ export class ServicesPageComponent implements OnDestroy {
     this.showEndpointsRail.set(true);
     const lastId = this.store.services().at(-1)?.id ?? null;
     this.store.selectService(lastId);
+  }
+
+  protected openEditServiceForm(): void {
+    const service = this.store.selectedService();
+    if (!service) return;
+    this.editProtocol.set(service.protocol);
+    this.showEditServiceForm.set(true);
+  }
+
+  protected editServiceFromList(serviceId: string): void {
+    this.selectService(serviceId);
+    this.openEditServiceForm();
+  }
+
+  protected async saveServiceEdits(name: string, port: number): Promise<void> {
+    const serviceId = this.store.selectedServiceId();
+    if (!serviceId || !name.trim()) return;
+
+    await this.store.updateService(serviceId, {
+      name: name.trim(),
+      port,
+      protocol: this.editProtocol(),
+    });
+
+    this.showEditServiceForm.set(false);
   }
 
   protected async startService(): Promise<void> {

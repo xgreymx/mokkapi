@@ -10,8 +10,10 @@ import {
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { CertificateTrustService } from '../../data/certificate-trust.service';
 import { WorkspaceStore } from '../../data/workspace.store';
 import { ThemeService } from '../../data/theme.service';
+import { OnboardingService } from '../../data/onboarding.service';
 import { IpcService } from '../../ipc/ipc.service';
 import type { AppTheme } from '@shared/models';
 
@@ -24,13 +26,14 @@ import type { AppTheme } from '@shared/models';
 })
 export class SettingsPageComponent implements OnInit {
   protected readonly store = inject(WorkspaceStore);
+  protected readonly certTrust = inject(CertificateTrustService);
   protected readonly themeService = inject(ThemeService);
+  protected readonly onboarding = inject(OnboardingService);
   private readonly ipc = inject(IpcService);
 
   protected portBase = 4000;
   protected retentionDays = 30;
   protected retentionRows = 100_000;
-  protected readonly caPath = signal('');
   protected readonly appVersion = signal('');
 
   protected readonly themeOptions: { label: string; value: AppTheme }[] = [
@@ -46,7 +49,6 @@ export class SettingsPageComponent implements OnInit {
       this.retentionDays = s.historyRetentionDays;
       this.retentionRows = s.historyRetentionRows;
     }
-    this.caPath.set(await this.ipc.getCaPath());
     this.appVersion.set(await this.ipc.getAppVersion());
   }
 
@@ -71,7 +73,6 @@ export class SettingsPageComponent implements OnInit {
   }
 
   protected async regenerateCa(): Promise<void> {
-    await this.ipc.regenerateCa();
-    this.caPath.set(await this.ipc.getCaPath());
+    await this.certTrust.regenerate();
   }
 }

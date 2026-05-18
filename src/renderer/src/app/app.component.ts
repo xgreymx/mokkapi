@@ -12,6 +12,7 @@ import {
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { OnboardingService } from './data/onboarding.service';
 import { ThemeService } from './data/theme.service';
 import { WorkspaceStore } from './data/workspace.store';
 
@@ -31,6 +32,7 @@ interface NavItem {
 })
 export class AppComponent implements OnDestroy {
   protected readonly theme = inject(ThemeService);
+  protected readonly onboarding = inject(OnboardingService);
   protected readonly workspace = inject(WorkspaceStore);
 
   protected readonly navItems: NavItem[] = [

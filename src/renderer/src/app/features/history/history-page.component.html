@@ -47,34 +47,52 @@
         </div>
 
         @for (entry of filteredEntries(); track entry.id) {
-          <button
-            type="button"
-            (click)="selectEntry(entry.id)"
-            class="history-row"
-            [class.history-row--active]="activeEntry()?.id === entry.id"
-          >
-            <span [class]="'mt-0.5 w-14 flex-shrink-0 badge-method badge-' + entry.method.toLowerCase()">
-              {{ entry.method }}
-            </span>
-
-            <span class="min-w-0 flex-1">
-              <span class="block truncate font-mono text-sm">{{ fullPath(entry) }}</span>
-              <span class="mt-1 flex items-center gap-2 text-[11px] text-[rgb(var(--text-xmuted))] font-mono">
-                <span>{{ entry.serviceId }}</span>
-                @if (entry.remoteAddr) {
-                  <span>{{ entry.remoteAddr }}</span>
-                }
+          <div class="group relative">
+            <button
+              type="button"
+              (click)="selectEntry(entry.id)"
+              class="history-row pr-12"
+              [class.history-row--active]="activeEntry()?.id === entry.id"
+            >
+              <span [class]="'mt-0.5 w-14 flex-shrink-0 badge-method badge-' + entry.method.toLowerCase()">
+                {{ entry.method }}
               </span>
-            </span>
 
-            <span class="w-12 flex-shrink-0 pt-0.5 text-right font-mono text-xs" [class]="statusCodeClass(entry.resStatus)">
-              {{ entry.resStatus }}
-            </span>
+              <span class="min-w-0 flex-1">
+                <span class="block truncate font-mono text-sm">{{ fullPath(entry) }}</span>
+                <span class="mt-1 flex items-center gap-2 text-[11px] text-[rgb(var(--text-xmuted))] font-mono">
+                  <span>{{ entry.serviceId }}</span>
+                  @if (entry.remoteAddr) {
+                    <span>{{ entry.remoteAddr }}</span>
+                  }
+                </span>
+              </span>
 
-            <span class="w-16 flex-shrink-0 pt-0.5 text-right font-mono text-xs text-[rgb(var(--text-xmuted))]">
-              {{ formatTs(entry.ts) }}
-            </span>
-          </button>
+              <span class="w-12 flex-shrink-0 pt-0.5 text-right font-mono text-xs" [class]="statusCodeClass(entry.resStatus)">
+                {{ entry.resStatus }}
+              </span>
+
+              <span class="w-16 flex-shrink-0 pt-0.5 text-right font-mono text-xs text-[rgb(var(--text-xmuted))]">
+                {{ formatTs(entry.ts) }}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-ghost btn-icon-sm absolute right-3 top-1/2 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+              title="Delete request"
+              aria-label="Delete request"
+              (click)="deleteEntry(entry.id, $event)"
+            >
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none"
+                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18"/>
+                <path d="M8 6V4h8v2"/>
+                <path d="M19 6l-1 14H6L5 6"/>
+                <path d="M10 11v6M14 11v6"/>
+              </svg>
+            </button>
+          </div>
         }
       }
     </div>

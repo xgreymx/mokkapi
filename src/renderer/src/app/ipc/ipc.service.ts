@@ -19,6 +19,7 @@ import type {
   TestResponse,
   ServiceRuntimeStatus,
   WorkspaceState,
+  CaTrustStatus,
   CreateServiceInput,
   CreateEndpointInput,
   CreateVariantInput,
@@ -75,6 +76,7 @@ export class IpcService {
   // ── History ────────────────────────────────────────────────────────────────
   queryHistory(filter: HistoryFilter): Promise<HistoryEntry[]> { return api().queryHistory(filter); }
   clearHistory(serviceId?: string): Promise<void> { return api().clearHistory(serviceId); }
+  deleteHistoryEntry(entryId: number): Promise<void> { return api().deleteHistoryEntry(entryId); }
 
   // ── Settings ───────────────────────────────────────────────────────────────
   getSettings(): Promise<AppSettings> { return api().getSettings(); }
@@ -95,6 +97,8 @@ export class IpcService {
   // ── Shell helpers ──────────────────────────────────────────────────────────
   openWorkspaceFolder(): Promise<void> { return api().openWorkspaceFolder(); }
   getCaPath(): Promise<string> { return api().getCaPath(); }
+  getCaTrustStatus(): Promise<CaTrustStatus> { return api().getCaTrustStatus(); }
+  installCa(): Promise<CaTrustStatus> { return api().installCa(); }
   regenerateCa(): Promise<void> { return api().regenerateCa(); }
   openFileDialog(options: { title?: string; filters?: { name: string; extensions: string[] }[] }): Promise<string | null> {
     return api().openFileDialog(options);

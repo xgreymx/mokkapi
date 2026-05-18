@@ -17,6 +17,18 @@ export interface TlsConfig {
   additionalHosts: string[];
 }
 
+export interface CaTrustStatus {
+  platform: string;
+  supported: boolean;
+  installed: boolean;
+  caPath: string;
+  thumbprint: string | null;
+  storeLabel: string;
+  message: string;
+  manualInstallLabel: string;
+  manualInstallCommand: string;
+}
+
 // ─── Matching ────────────────────────────────────────────────────────────────
 
 /** A single rule value: exact string, negated presence, or regex check */
@@ -92,6 +104,7 @@ export interface AppSettings {
   defaultPortBase: number;
   historyRetentionDays: number;
   historyRetentionRows: number;
+  onboardingCompletedAt: number | null;
 }
 
 export interface PinnedRequest {

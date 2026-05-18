@@ -67,6 +67,7 @@ export class WorkspaceManager {
       defaultPortBase: 4000,
       historyRetentionDays: 30,
       historyRetentionRows: 100_000,
+      onboardingCompletedAt: null,
     };
   }
 

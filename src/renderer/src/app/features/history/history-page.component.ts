@@ -66,6 +66,12 @@ export class HistoryPageComponent implements OnInit, OnDestroy {
     this.applyEntries([]);
   }
 
+  protected async deleteEntry(entryId: number, event?: Event): Promise<void> {
+    event?.stopPropagation();
+    await this.ipc.deleteHistoryEntry(entryId);
+    this.applyEntries(this.entries().filter((entry) => entry.id !== entryId));
+  }
+
   protected setFilter(value: string): void {
     this.filterText.set(value);
   }

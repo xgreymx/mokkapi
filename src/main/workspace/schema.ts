@@ -78,6 +78,7 @@ export const AppSettingsSchema = z.object({
   defaultPortBase: z.number().int().min(1024).max(60000).default(4000),
   historyRetentionDays: z.number().int().min(1).max(365).default(30),
   historyRetentionRows: z.number().int().min(1000).max(1_000_000).default(100_000),
+  onboardingCompletedAt: z.number().int().nullable().default(null),
 });
 
 export type ServiceInput = z.infer<typeof ServiceSchema>;

@@ -16,6 +16,7 @@ import type {
   TestResponse,
   ServiceRuntimeStatus,
   WorkspaceState,
+  CaTrustStatus,
   CreateServiceInput,
   CreateEndpointInput,
   CreateVariantInput,
@@ -50,6 +51,7 @@ export const IPC = {
   // History
   QUERY_HISTORY: 'history:query',
   CLEAR_HISTORY: 'history:clear',
+  DELETE_HISTORY_ENTRY: 'history:delete-entry',
 
   // Settings
   GET_SETTINGS:    'settings:get',
@@ -73,6 +75,8 @@ export const IPC = {
   // Shell helpers
   OPEN_WORKSPACE_FOLDER: 'shell:open-workspace-folder',
   GET_CA_PATH:           'shell:get-ca-path',
+  GET_CA_TRUST_STATUS:   'shell:get-ca-trust-status',
+  INSTALL_CA:            'shell:install-ca',
   REGENERATE_CA:         'shell:regenerate-ca',
   OPEN_FILE_DIALOG:      'shell:open-file-dialog',
 } as const;
@@ -108,6 +112,7 @@ export interface MokkApiElectron {
   // History
   queryHistory(filter: HistoryFilter): Promise<HistoryEntry[]>;
   clearHistory(serviceId?: string): Promise<void>;
+  deleteHistoryEntry(entryId: number): Promise<void>;
 
   // Settings
   getSettings(): Promise<AppSettings>;
@@ -126,6 +131,8 @@ export interface MokkApiElectron {
   // Shell helpers
   openWorkspaceFolder(): Promise<void>;
   getCaPath(): Promise<string>;
+  getCaTrustStatus(): Promise<CaTrustStatus>;
+  installCa(): Promise<CaTrustStatus>;
   regenerateCa(): Promise<void>;
   openFileDialog(options: { title?: string; filters?: { name: string; extensions: string[] }[] }): Promise<string | null>;
 
