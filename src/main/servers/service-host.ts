@@ -6,7 +6,7 @@
 
 import Fastify from 'fastify';
 import type { FastifyInstance, RouteHandlerMethod } from 'fastify';
-import { matchRequest } from './matcher';
+import { matchRequest, normalizeRequestTarget } from './matcher';
 import { renderBody, defaultContentType } from './renderer';
 import type { Service, ServiceRuntimeStatus, HistoryEntry } from '../../shared/models';
 import type { HistoryStore } from '../history/history-store';
@@ -18,6 +18,7 @@ export class ServiceHost {
   private app: FastifyInstance | null = null;
   private _service: Service;
   private status: ServiceRuntimeStatus;
+  private listeningHost = 'localhost';
 
   constructor(
     service: Service,
@@ -110,6 +111,7 @@ export class ServiceHost {
         headers,
         parsedBody,
       );
+      const requestTarget = normalizeRequestTarget(req.url);
 
       // ── Build response ────────────────────────────────────────────────────
       let resStatus: number;
@@ -152,9 +154,6 @@ export class ServiceHost {
       const durationMs = Date.now() - startMs;
 
       // ── Persist to history ────────────────────────────────────────────────
-      const pathOnly = req.url.includes('?') ? req.url.split('?')[0] : req.url;
-      const queryStr  = req.url.includes('?') ? req.url.split('?')[1] : null;
-
       const entry = this.history.insert({
         id: 0,
         ts: startMs,
@@ -162,8 +161,8 @@ export class ServiceHost {
         endpointId: result?.endpoint.id ?? null,
         variantId:  result?.variant.id  ?? null,
         method:     req.method,
-        path:       pathOnly,
-        query:      queryStr,
+        path:       requestTarget.pathname,
+        query:      requestTarget.query,
         reqHeaders: headers,
         reqBody:    rawBody ?? null,
         resStatus,
@@ -190,9 +189,9 @@ export class ServiceHost {
     this.app = app;
 
     try {
-      await app.listen({ port: this._service.port, host: '0.0.0.0' });
+      this.listeningHost = await listenWithLoopbackSupport(app, this._service.port);
       this.status = { serviceId: this._service.id, status: 'running', port: this._service.port };
-      console.log(`[ServiceHost] "${this._service.name}" running on ${this._service.protocol}://0.0.0.0:${this._service.port}`);
+      console.log(`[ServiceHost] "${this._service.name}" running on ${this._service.protocol}://${this.listeningHost}:${this._service.port}`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       this.status = { serviceId: this._service.id, status: 'error', error: msg };
@@ -260,4 +259,23 @@ function safeStringify(value: unknown): string {
   } catch {
     return String(value);
   }
+}
+
+export async function listenWithLoopbackSupport(app: FastifyInstance, port: number): Promise<string> {
+  try {
+    await app.listen({ port, host: '::' });
+    return 'localhost';
+  } catch (err: unknown) {
+    if (!isIpv6UnavailableError(err)) throw err;
+  }
+
+  await app.listen({ port, host: '0.0.0.0' });
+  return '127.0.0.1';
+}
+
+function isIpv6UnavailableError(err: unknown): boolean {
+  const code = typeof err === 'object' && err !== null && 'code' in err
+    ? (err as { code?: string }).code
+    : undefined;
+  return code === 'EAFNOSUPPORT' || code === 'EADDRNOTAVAIL';
 }

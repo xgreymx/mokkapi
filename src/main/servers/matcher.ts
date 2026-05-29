@@ -12,6 +12,11 @@ export interface MatchResult {
   params: Record<string, string>;
 }
 
+export interface NormalizedRequestTarget {
+  pathname: string;
+  query: string | null;
+}
+
 export function matchRequest(
   service: Service,
   method: string,
@@ -20,7 +25,7 @@ export function matchRequest(
   headers: Record<string, string>,
   body: unknown,
 ): MatchResult | null {
-  const pathname = stripQuery(url);
+  const { pathname } = normalizeRequestTarget(url);
 
   for (const endpoint of service.endpoints) {
     if (endpoint.method.toUpperCase() !== method.toUpperCase()) continue;
@@ -136,7 +141,27 @@ function evalJsonPath(obj: unknown, path: string): unknown {
   return cur;
 }
 
-function stripQuery(url: string): string {
-  const q = url.indexOf('?');
-  return q >= 0 ? url.slice(0, q) : url;
+export function normalizeRequestTarget(url: string): NormalizedRequestTarget {
+  const trimmed = url.trim();
+  if (!trimmed) {
+    return { pathname: '/', query: null };
+  }
+
+  if (/^[a-z][a-z\d+.-]*:\/\//i.test(trimmed)) {
+    try {
+      const parsed = new URL(trimmed);
+      return {
+        pathname: parsed.pathname || '/',
+        query: parsed.search ? parsed.search.slice(1) : null,
+      };
+    } catch {
+      // Fall through to the raw request-target parser.
+    }
+  }
+
+  const q = trimmed.indexOf('?');
+  return {
+    pathname: q >= 0 ? trimmed.slice(0, q) || '/' : trimmed,
+    query: q >= 0 ? trimmed.slice(q + 1) : null,
+  };
 }
