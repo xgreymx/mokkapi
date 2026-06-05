@@ -19,6 +19,9 @@ const mokkapi: MokkApiElectron = {
   deleteService: (id) => ipcRenderer.invoke(IPC.DELETE_SERVICE, id),
   startService: (id) => ipcRenderer.invoke(IPC.START_SERVICE, id),
   stopService: (id) => ipcRenderer.invoke(IPC.STOP_SERVICE, id),
+  getIisStatus: (port, protocol, options) => ipcRenderer.invoke(IPC.GET_IIS_STATUS, { port, protocol, options }),
+  getIisDiagnostics: (options) => ipcRenderer.invoke(IPC.GET_IIS_DIAGNOSTICS, { options }),
+  openIisSiteConfig: (serviceId) => ipcRenderer.invoke(IPC.OPEN_IIS_SITE_CONFIG, serviceId),
 
   // ── Endpoints ──────────────────────────────────────────────────────────────
   createEndpoint: (serviceId, data) =>

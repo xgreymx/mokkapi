@@ -53,6 +53,18 @@ export function registerIpcHandlers(
     services.stopService(id),
   );
 
+  ipcMain.handle(IPC.GET_IIS_STATUS, (_e, { port, protocol, options }) =>
+    services.getIisIntegrationStatus({ port, protocol }, options),
+  );
+
+  ipcMain.handle(IPC.GET_IIS_DIAGNOSTICS, (_e, { options }) =>
+    services.getIisDiagnostics(options),
+  );
+
+  ipcMain.handle(IPC.OPEN_IIS_SITE_CONFIG, (_e, serviceId: string) =>
+    services.openIisSiteConfig(serviceId, shell),
+  );
+
   // ── Endpoints ──────────────────────────────────────────────────────────────
 
   ipcMain.handle(IPC.CREATE_ENDPOINT, async (_e, { serviceId, data }) => {

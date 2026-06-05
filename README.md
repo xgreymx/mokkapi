@@ -51,6 +51,8 @@ That opens the Electron app in development mode.
 7. Use the built-in Test Client or your own app to call the endpoint.
 8. Open Request Inspector to see the incoming request and the mock response.
 
+Service ports can use the full `1-65535` range, including `80` and `443`.
+
 ## What you can do
 
 ### Build mock services visually
@@ -59,6 +61,7 @@ That opens the Electron app in development mode.
 - Start and stop each service from the UI.
 - Define endpoints by HTTP method and path.
 - Support parameterized paths such as `/orders/:id`.
+- Bind services directly to `80` or `443` when the machine allows those ports.
 
 ### Create realistic responses
 
@@ -193,6 +196,48 @@ If you want to generate desktop distribution artifacts locally:
 ```bash
 npm run dist
 ```
+
+## IIS and ports 80/443
+
+If your environment only allows inbound traffic on `80` and `443`, mokkapi now accepts those ports for individual services.
+
+When a service is configured as `HTTP :80` or `HTTPS :443`, mokkapi now tries this order on Windows:
+
+1. If an active IIS site already owns that exact binding, mokkapi starts the mock listener on an internal loopback port and adds temporary IIS reverse-proxy rules for the service endpoints while the mock is running.
+2. If IIS is not active on that binding, or IIS is not installed, mokkapi falls back to listening directly on the configured port.
+
+There are two supported deployment patterns on Windows:
+
+1. Direct bind: configure the service itself to use `80` or `443`.
+2. IIS reverse proxy: keep IIS bound to `80/443` and forward traffic to mokkapi on an internal port such as `4001`.
+
+Use direct bind only when `80/443` are not already owned by IIS or another process. If IIS is already listening on those ports, mokkapi cannot bind to the same port in parallel.
+
+For IIS integration, the practical approach is reverse proxying with URL Rewrite plus Application Request Routing (ARR):
+
+```xml
+<configuration>
+  <system.webServer>
+    <rewrite>
+      <rules>
+        <rule name="mokkapi-http" stopProcessing="true">
+          <match url="(.*)" />
+          <action type="Rewrite" url="http://127.0.0.1:4001/{R:1}" logRewrittenUrl="true" />
+        </rule>
+      </rules>
+    </rewrite>
+  </system.webServer>
+</configuration>
+```
+
+Recommended setup:
+
+- Publish `http://127.0.0.1:4001` or `https://127.0.0.1:4443` from mokkapi.
+- Let IIS own the public `80/443` bindings.
+- Forward the desired host name or path from IIS to the mokkapi service.
+- If you terminate TLS in IIS, keep the mokkapi backend on HTTP unless you specifically need end-to-end HTTPS.
+
+This lets external test systems hit `80/443` while mokkapi still serves the mock responses behind IIS.
 
 ## Tech stack
 

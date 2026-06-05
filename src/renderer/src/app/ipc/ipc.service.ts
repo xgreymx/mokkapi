@@ -19,10 +19,13 @@ import type {
   TestResponse,
   ServiceRuntimeStatus,
   WorkspaceState,
+  IisDiagnosticsReport,
+  IisIntegrationStatus,
   CaTrustStatus,
   CreateServiceInput,
   CreateEndpointInput,
   CreateVariantInput,
+  ServiceProtocol,
 } from '@shared/models';
 
 function api(): MokkApiElectron {
@@ -44,6 +47,19 @@ export class IpcService {
   deleteService(id: string): Promise<void> { return api().deleteService(id); }
   startService(id: string): Promise<ServiceRuntimeStatus> { return api().startService(id); }
   stopService(id: string): Promise<ServiceRuntimeStatus> { return api().stopService(id); }
+  getIisStatus(
+    port: number,
+    protocol: ServiceProtocol,
+    options?: { allowElevation?: boolean },
+  ): Promise<IisIntegrationStatus> {
+    return api().getIisStatus(port, protocol, options);
+  }
+  getIisDiagnostics(options?: { allowElevation?: boolean }): Promise<IisDiagnosticsReport> {
+    return api().getIisDiagnostics(options);
+  }
+  openIisSiteConfig(serviceId: string): Promise<void> {
+    return api().openIisSiteConfig(serviceId);
+  }
 
   // ── Endpoints ──────────────────────────────────────────────────────────────
   createEndpoint(serviceId: string, data: CreateEndpointInput): Promise<Endpoint> {

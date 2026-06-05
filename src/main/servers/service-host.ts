@@ -8,11 +8,25 @@ import Fastify from 'fastify';
 import type { FastifyInstance, RouteHandlerMethod } from 'fastify';
 import { matchRequest, normalizeRequestTarget } from './matcher';
 import { renderBody, defaultContentType } from './renderer';
-import type { Service, ServiceRuntimeStatus, HistoryEntry } from '../../shared/models';
+import type { Service, ServiceProtocol, ServiceRuntimeStatus, HistoryEntry } from '../../shared/models';
 import type { HistoryStore } from '../history/history-store';
 import type { CertManager } from './cert-manager';
 
 const HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options'] as const;
+
+export interface ServiceHostStartOptions {
+  port?: number;
+  publicPort?: number;
+  protocol?: ServiceProtocol;
+  exposure?: 'direct' | 'iis';
+  iisSiteName?: string;
+  localOnly?: boolean;
+}
+
+export interface ListeningAddress {
+  hostLabel: string;
+  port: number;
+}
 
 export class ServiceHost {
   private app: FastifyInstance | null = null;
@@ -41,13 +55,22 @@ export class ServiceHost {
     return { ...this.status };
   }
 
-  async start(): Promise<void> {
+  setRuntimeStatus(status: ServiceRuntimeStatus): void {
+    this.status = { ...status };
+  }
+
+  async start(options: ServiceHostStartOptions = {}): Promise<void> {
     if (this.app) await this.stop();
 
     this.status = { serviceId: this._service.id, status: 'starting' };
 
+    const listenPort = options.port ?? this._service.port;
+    const publicPort = options.publicPort ?? this._service.port;
+    const effectiveProtocol = options.protocol ?? this._service.protocol;
+    const exposure = options.exposure ?? 'direct';
+
     let httpsOpts: { key: string; cert: string } | null = null;
-    if (this._service.protocol === 'https') {
+    if (effectiveProtocol === 'https') {
       try {
         const creds = await this.certs.resolveTls(this._service.id, this._service.tls);
         httpsOpts = { key: creds.key, cert: creds.cert };
@@ -189,14 +212,28 @@ export class ServiceHost {
     this.app = app;
 
     try {
-      this.listeningHost = await listenWithLoopbackSupport(app, this._service.port);
-      this.status = { serviceId: this._service.id, status: 'running', port: this._service.port };
-      console.log(`[ServiceHost] "${this._service.name}" running on ${this._service.protocol}://${this.listeningHost}:${this._service.port}`);
+      const listening = options.localOnly
+        ? await listenOnLoopback(app, listenPort)
+        : await listenWithLoopbackSupport(app, listenPort);
+      this.listeningHost = listening.hostLabel;
+      this.status = {
+        serviceId: this._service.id,
+        status: 'running',
+        port: publicPort,
+        listenPort: listening.port,
+        exposure,
+        ...(options.iisSiteName ? { iisSiteName: options.iisSiteName } : {}),
+      };
+      const publicLabel = `${this._service.protocol}://${exposure === 'iis' ? 'localhost' : this.listeningHost}:${publicPort}`;
+      const backendLabel = exposure === 'iis'
+        ? ` -> backend ${effectiveProtocol}://${this.listeningHost}:${listening.port}${options.iisSiteName ? ` via IIS '${options.iisSiteName}'` : ' via IIS'}`
+        : '';
+      console.log(`[ServiceHost] "${this._service.name}" running on ${publicLabel}${backendLabel}`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       this.status = { serviceId: this._service.id, status: 'error', error: msg };
       this.app = null;
-      throw new Error(`Port ${this._service.port}: ${msg}`);
+      throw new Error(`Port ${publicPort}: ${msg}`);
     }
   }
 
@@ -261,16 +298,36 @@ function safeStringify(value: unknown): string {
   }
 }
 
-export async function listenWithLoopbackSupport(app: FastifyInstance, port: number): Promise<string> {
+export async function listenOnLoopback(app: FastifyInstance, port: number): Promise<ListeningAddress> {
+  try {
+    await app.listen({ port, host: '::1' });
+    return { hostLabel: 'localhost', port: resolveListeningPort(app) };
+  } catch (err: unknown) {
+    if (!isIpv6UnavailableError(err)) throw err;
+  }
+
+  await app.listen({ port, host: '127.0.0.1' });
+  return { hostLabel: '127.0.0.1', port: resolveListeningPort(app) };
+}
+
+export async function listenWithLoopbackSupport(app: FastifyInstance, port: number): Promise<ListeningAddress> {
   try {
     await app.listen({ port, host: '::' });
-    return 'localhost';
+    return { hostLabel: 'localhost', port: resolveListeningPort(app) };
   } catch (err: unknown) {
     if (!isIpv6UnavailableError(err)) throw err;
   }
 
   await app.listen({ port, host: '0.0.0.0' });
-  return '127.0.0.1';
+  return { hostLabel: '127.0.0.1', port: resolveListeningPort(app) };
+}
+
+function resolveListeningPort(app: FastifyInstance): number {
+  const address = app.server.address();
+  if (typeof address === 'object' && address) {
+    return address.port;
+  }
+  throw new Error('Could not resolve listening port');
 }
 
 function isIpv6UnavailableError(err: unknown): boolean {

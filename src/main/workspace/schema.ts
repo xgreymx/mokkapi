@@ -62,7 +62,7 @@ const TlsConfigSchema = z.object({
 export const ServiceSchema = z.object({
   id: z.string().regex(/^[a-z0-9-]+$/, 'Service id must be kebab-case'),
   name: z.string().min(1),
-  port: z.number().int().min(1024).max(65535),
+  port: z.number().int().min(1).max(65535),
   protocol: z.enum(['http', 'https']).default('http'),
   tls: TlsConfigSchema.default({ mode: 'auto', certPath: null, keyPath: null, additionalHosts: [] }),
   cors: z.object({ allowedOrigins: z.array(z.string()).default(['*']) }).default({ allowedOrigins: ['*'] }),
@@ -75,7 +75,7 @@ export const ServiceSchema = z.object({
 export const AppSettingsSchema = z.object({
   workspacePath: z.string(),
   theme: z.enum(['system', 'light', 'dark']).default('system'),
-  defaultPortBase: z.number().int().min(1024).max(60000).default(4000),
+  defaultPortBase: z.number().int().min(1).max(60000).default(4000),
   historyRetentionDays: z.number().int().min(1).max(365).default(30),
   historyRetentionRows: z.number().int().min(1000).max(1_000_000).default(100_000),
   onboardingCompletedAt: z.number().int().nullable().default(null),

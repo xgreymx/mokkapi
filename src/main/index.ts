@@ -4,6 +4,7 @@ import { WorkspaceManager } from './workspace/workspace-manager';
 import { HistoryStore } from './history/history-store';
 import { CertManager } from './servers/cert-manager';
 import { ServiceManager } from './servers/service-manager';
+import { IisManager } from './servers/iis-manager';
 import { registerIpcHandlers } from './ipc/handlers';
 import { IPC } from './ipc/channels';
 import type { HistoryEntry, ServiceRuntimeStatus } from '../shared/models';
@@ -14,6 +15,7 @@ const workspace = new WorkspaceManager();
 let history!:  HistoryStore;
 let certMgr!:  CertManager;
 let services!: ServiceManager;
+const iisMgr = new IisManager();
 
 // ─── Window ────────────────────────────────────────────────────────────────────
 
@@ -72,7 +74,7 @@ app.whenReady().then(async () => {
     mainWindow?.webContents.send(IPC.EVT_REQUEST_RECEIVED, entry);
   };
 
-  services = new ServiceManager(workspace, history, certMgr, broadcastStatus, broadcastHistory);
+  services = new ServiceManager(workspace, history, certMgr, iisMgr, broadcastStatus, broadcastHistory);
   await services.init();
 
   // Broadcast workspace changes caused by external file edits

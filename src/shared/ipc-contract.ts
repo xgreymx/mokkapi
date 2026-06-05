@@ -16,10 +16,13 @@ import type {
   TestResponse,
   ServiceRuntimeStatus,
   WorkspaceState,
+  IisDiagnosticsReport,
+  IisIntegrationStatus,
   CaTrustStatus,
   CreateServiceInput,
   CreateEndpointInput,
   CreateVariantInput,
+  ServiceProtocol,
 } from './models';
 
 // ─── Channel name constants ───────────────────────────────────────────────────
@@ -35,6 +38,9 @@ export const IPC = {
   DELETE_SERVICE: 'services:delete',
   START_SERVICE:  'services:start',
   STOP_SERVICE:   'services:stop',
+  GET_IIS_STATUS: 'services:get-iis-status',
+  GET_IIS_DIAGNOSTICS: 'services:get-iis-diagnostics',
+  OPEN_IIS_SITE_CONFIG: 'services:open-iis-site-config',
 
   // Endpoints
   CREATE_ENDPOINT:   'endpoints:create',
@@ -96,6 +102,13 @@ export interface MokkApiElectron {
   deleteService(id: string): Promise<void>;
   startService(id: string): Promise<ServiceRuntimeStatus>;
   stopService(id: string): Promise<ServiceRuntimeStatus>;
+  getIisStatus(
+    port: number,
+    protocol: ServiceProtocol,
+    options?: { allowElevation?: boolean },
+  ): Promise<IisIntegrationStatus>;
+  getIisDiagnostics(options?: { allowElevation?: boolean }): Promise<IisDiagnosticsReport>;
+  openIisSiteConfig(serviceId: string): Promise<void>;
 
   // Endpoints
   createEndpoint(serviceId: string, data: CreateEndpointInput): Promise<Endpoint>;

@@ -87,6 +87,120 @@
     </div>
   </section>
 
+  <!-- ── IIS Integration ────────────────────────────────────────────── -->
+  <section class="mb-8">
+    <h2 class="text-[11px] font-semibold uppercase tracking-wider text-[rgb(var(--text-muted))] mb-3">
+      IIS Integration
+    </h2>
+    <div class="card divide-y divide-[rgb(var(--border))]">
+      <div class="flex items-center justify-between px-4 py-3 gap-4">
+        <div>
+          <p class="text-sm font-medium">Diagnose local IIS support</p>
+          <p class="text-xs text-[rgb(var(--text-muted))]">
+            Checks whether IIS is installed and whether URL Rewrite plus ARR are available for ports 80 and 443.
+          </p>
+        </div>
+        <button class="btn btn-outline btn-sm" (click)="diagnoseIis()" [disabled]="iisDiagnosticsLoading()">
+          {{ iisDiagnosticsLoading() ? 'Checking…' : 'Diagnose IIS' }}
+        </button>
+      </div>
+
+      @if (iisDiagnosticsError(); as errorMessage) {
+        <div class="px-4 py-3">
+          <div class="rounded-lg border border-[rgb(var(--status-5xx))/0.28] bg-[rgb(var(--status-5xx))/0.08] px-3 py-2">
+            <p class="text-xs font-medium text-[rgb(var(--status-5xx))]">IIS diagnostics failed</p>
+            <p class="mt-1 text-xs text-[rgb(var(--text-muted))]">{{ errorMessage }}</p>
+          </div>
+        </div>
+      }
+
+      <div class="px-4 py-3 grid gap-3">
+        <div class="grid gap-2 sm:grid-cols-2">
+          <div class="rounded-lg border border-[rgb(var(--border))] px-3 py-2 surface min-h-16">
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-[rgb(var(--text-muted))]">IIS</p>
+            @if (iisDiagnosticsLoading()) {
+              <div class="mt-2 flex items-center gap-2 text-sm text-[rgb(var(--text-muted))]">
+                <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity="0.25" stroke-width="3"></circle>
+                  <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
+                </svg>
+                <span>Checking…</span>
+              </div>
+            } @else if (iisDiagnosticsSummary(); as summary) {
+              <p class="mt-1 text-sm font-medium">{{ summary.supported ? (summary.iisInstalled ? 'Installed' : 'Not installed') : 'Unavailable on this platform' }}</p>
+            } @else {
+              <p class="mt-1 text-sm font-medium text-[rgb(var(--text-muted))]">Run Diagnose IIS</p>
+            }
+          </div>
+
+          <div class="rounded-lg border border-[rgb(var(--border))] px-3 py-2 surface min-h-16">
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-[rgb(var(--text-muted))]">Proxy prerequisites</p>
+            @if (iisDiagnosticsLoading()) {
+              <div class="mt-2 flex items-center gap-2 text-sm text-[rgb(var(--text-muted))]">
+                <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity="0.25" stroke-width="3"></circle>
+                  <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
+                </svg>
+                <span>Checking…</span>
+              </div>
+            } @else if (iisDiagnosticsSummary(); as summary) {
+              <p class="mt-1 text-sm font-medium">{{ summary.urlRewriteInstalled ? 'URL Rewrite OK' : 'URL Rewrite missing' }} · {{ summary.arrInstalled ? 'ARR OK' : 'ARR missing' }}</p>
+            } @else {
+              <p class="mt-1 text-sm font-medium text-[rgb(var(--text-muted))]">Run Diagnose IIS</p>
+            }
+          </div>
+        </div>
+
+        <div class="grid gap-2 sm:grid-cols-2">
+          <div class="rounded-lg border border-[rgb(var(--border))] px-3 py-2 surface min-h-16">
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-[rgb(var(--text-muted))]">HTTP :80</p>
+            @if (iisDiagnosticsLoading()) {
+              <div class="mt-2 flex items-center gap-2 text-sm text-[rgb(var(--text-muted))]">
+                <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity="0.25" stroke-width="3"></circle>
+                  <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
+                </svg>
+                <span>Checking…</span>
+              </div>
+            } @else if (iisDiagnosticsSummary(); as summary) {
+              <p class="mt-1 text-sm font-medium">{{ summary.httpBindingSite ? 'Bound by ' + summary.httpBindingSite : 'No active IIS binding' }}</p>
+            } @else {
+              <p class="mt-1 text-sm font-medium text-[rgb(var(--text-muted))]">Run Diagnose IIS</p>
+            }
+          </div>
+
+          <div class="rounded-lg border border-[rgb(var(--border))] px-3 py-2 surface min-h-16">
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-[rgb(var(--text-muted))]">HTTPS :443</p>
+            @if (iisDiagnosticsLoading()) {
+              <div class="mt-2 flex items-center gap-2 text-sm text-[rgb(var(--text-muted))]">
+                <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity="0.25" stroke-width="3"></circle>
+                  <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
+                </svg>
+                <span>Checking…</span>
+              </div>
+            } @else if (iisDiagnosticsSummary(); as summary) {
+              <p class="mt-1 text-sm font-medium">{{ summary.httpsBindingSite ? 'Bound by ' + summary.httpsBindingSite : 'No active IIS binding' }}</p>
+            } @else {
+              <p class="mt-1 text-sm font-medium text-[rgb(var(--text-muted))]">Run Diagnose IIS</p>
+            }
+          </div>
+        </div>
+
+        @if (iisDiagnosticsSummary(); as summary) {
+          @if (summary.iisInstalled && (!summary.urlRewriteInstalled || !summary.arrInstalled)) {
+            <div class="rounded-lg border border-[rgb(var(--status-4xx))/0.28] bg-[rgb(var(--status-4xx))/0.08] px-3 py-2">
+              <p class="text-xs font-medium text-[rgb(var(--status-4xx))]">IIS needs URL Rewrite + ARR</p>
+              <p class="mt-1 text-xs text-[rgb(var(--text-muted))]">
+                Install {{ !summary.urlRewriteInstalled && !summary.arrInstalled ? 'IIS URL Rewrite and Application Request Routing (ARR)' : !summary.urlRewriteInstalled ? 'IIS URL Rewrite' : 'Application Request Routing (ARR)' }} to publish mokkapi endpoints through IIS when ports 80 or 443 are already owned by IIS.
+              </p>
+            </div>
+          }
+        }
+      </div>
+    </div>
+  </section>
+
   <!-- ── Onboarding ──────────────────────────────────────────────────── -->
   <section class="mb-8">
     <h2 class="text-[11px] font-semibold uppercase tracking-wider text-[rgb(var(--text-muted))] mb-3">

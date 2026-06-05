@@ -123,7 +123,27 @@ export interface ServiceRuntimeStatus {
   serviceId: string;
   status: ServiceStatus;
   port?: number;
+  listenPort?: number;
+  exposure?: 'direct' | 'iis';
+  iisSiteName?: string;
   error?: string;
+}
+
+export interface IisIntegrationStatus {
+  applicable: boolean;
+  iisInstalled: boolean;
+  requiresElevation: boolean;
+  bindingActive: boolean;
+  siteName: string | null;
+  urlRewriteInstalled: boolean;
+  arrInstalled: boolean;
+  canProxy: boolean;
+  message: string | null;
+}
+
+export interface IisDiagnosticsReport {
+  http80: IisIntegrationStatus;
+  https443: IisIntegrationStatus;
 }
 
 export interface WorkspaceState {

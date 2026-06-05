@@ -3,6 +3,7 @@ import {
   inject,
   signal,
   computed,
+  effect,
   ChangeDetectionStrategy,
   OnDestroy,
 } from '@angular/core';
@@ -10,7 +11,7 @@ import { CertificateTrustService } from '../../data/certificate-trust.service';
 import { WorkspaceStore } from '../../data/workspace.store';
 import { IpcService } from '../../ipc/ipc.service';
 import { EndpointEditorComponent } from './endpoint-editor.component';
-import type { Endpoint, ServiceProtocol } from '@shared/models';
+import type { Endpoint, IisIntegrationStatus, ServiceProtocol } from '@shared/models';
 
 @Component({
   selector: 'app-services-page',
@@ -34,12 +35,103 @@ export class ServicesPageComponent implements OnDestroy {
   protected readonly selectedEndpointId = signal<string | null>(null);
   protected readonly newProtocol = signal<ServiceProtocol>('http');
   protected readonly editProtocol = signal<ServiceProtocol>('http');
+  protected readonly iisStatus = signal<IisIntegrationStatus | null>(null);
+  protected readonly newPort = signal(0);
+  protected readonly editPort = signal(0);
+  protected readonly newServiceIisStatus = signal<IisIntegrationStatus | null>(null);
+  protected readonly editServiceIisStatus = signal<IisIntegrationStatus | null>(null);
+  protected readonly iisInstallWarning = computed(() => {
+    const status = this.iisStatus();
+    if (!status?.bindingActive || status.canProxy || !status.message) return null;
+    return status.message;
+  });
+  protected readonly newServiceIisMessage = computed(() => this.describeModalIisState(this.newServiceIisStatus()));
+  protected readonly editServiceIisMessage = computed(() => this.describeModalIisState(this.editServiceIisStatus()));
   protected readonly servicesRailVisible = computed(() => this.showServicesRail() || this.peekServicesRail());
   protected readonly endpointsRailVisible = computed(() => this.showEndpointsRail() || this.peekEndpointsRail());
+  protected readonly pendingServiceAction = signal<'start' | 'stop' | null>(null);
+  protected readonly pendingServiceId = signal<string | null>(null);
+  protected readonly iisConfigFeedback = signal<string | null>(null);
 
   private servicesRailPeekTimer: ReturnType<typeof setTimeout> | null = null;
   private endpointsRailPeekTimer: ReturnType<typeof setTimeout> | null = null;
+  private iisStatusRequestId = 0;
+  private newServiceIisRequestId = 0;
+  private editServiceIisRequestId = 0;
   private readonly railPeekDelayMs = 260;
+
+  private readonly syncSelectedServiceIisStatus = effect(() => {
+    const service = this.store.selectedService();
+    if (!service || !this.usesIisManagedPort(service.protocol, service.port)) {
+      this.iisStatusRequestId++;
+      this.iisStatus.set(null);
+      return;
+    }
+
+    const requestId = ++this.iisStatusRequestId;
+    this.ipc.getIisStatus(service.port, service.protocol)
+      .then((status) => {
+        if (requestId !== this.iisStatusRequestId) return;
+        this.iisStatus.set(status);
+      })
+      .catch((error: unknown) => {
+        if (requestId !== this.iisStatusRequestId) return;
+        const message = error instanceof Error ? error.message : String(error);
+        this.iisStatus.set({
+          applicable: true,
+          iisInstalled: false,
+          requiresElevation: false,
+          bindingActive: false,
+          siteName: null,
+          urlRewriteInstalled: false,
+          arrInstalled: false,
+          canProxy: false,
+          message,
+        });
+      });
+  });
+
+  private readonly syncNewServiceIisStatus = effect(() => {
+    const protocol = this.newProtocol();
+    const port = this.newPort();
+    if (!this.showNewServiceForm() || !this.usesIisManagedPort(protocol, port)) {
+      this.newServiceIisRequestId++;
+      this.newServiceIisStatus.set(null);
+      return;
+    }
+
+    const requestId = ++this.newServiceIisRequestId;
+    this.ipc.getIisStatus(port, protocol)
+      .then((status) => {
+        if (requestId !== this.newServiceIisRequestId) return;
+        this.newServiceIisStatus.set(status.iisInstalled ? status : null);
+      })
+      .catch(() => {
+        if (requestId !== this.newServiceIisRequestId) return;
+        this.newServiceIisStatus.set(null);
+      });
+  });
+
+  private readonly syncEditServiceIisStatus = effect(() => {
+    const protocol = this.editProtocol();
+    const port = this.editPort();
+    if (!this.showEditServiceForm() || !this.usesIisManagedPort(protocol, port)) {
+      this.editServiceIisRequestId++;
+      this.editServiceIisStatus.set(null);
+      return;
+    }
+
+    const requestId = ++this.editServiceIisRequestId;
+    this.ipc.getIisStatus(port, protocol)
+      .then((status) => {
+        if (requestId !== this.editServiceIisRequestId) return;
+        this.editServiceIisStatus.set(status.iisInstalled ? status : null);
+      })
+      .catch(() => {
+        if (requestId !== this.editServiceIisRequestId) return;
+        this.editServiceIisStatus.set(null);
+      });
+  });
 
   protected readonly selectedEndpoint = computed(() => {
     const id = this.selectedEndpointId();
@@ -82,8 +174,61 @@ export class ServicesPageComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.iisStatusRequestId++;
+    this.newServiceIisRequestId++;
+    this.editServiceIisRequestId++;
     this.clearServicesRailPeekTimer();
     this.clearEndpointsRailPeekTimer();
+  }
+
+  private usesIisManagedPort(protocol: ServiceProtocol, port: number): boolean {
+    return (protocol === 'http' && port === 80) || (protocol === 'https' && port === 443);
+  }
+
+  protected openNewServiceForm(): void {
+    this.newProtocol.set('http');
+    this.newPort.set(this.nextPort());
+    this.showNewServiceForm.set(true);
+  }
+
+  protected setNewPort(value: number): void {
+    this.newPort.set(Number.isFinite(value) ? value : 0);
+  }
+
+  protected setEditPort(value: number): void {
+    this.editPort.set(Number.isFinite(value) ? value : 0);
+  }
+
+  protected closeNewServiceForm(): void {
+    this.showNewServiceForm.set(false);
+    this.newServiceIisRequestId++;
+    this.newServiceIisStatus.set(null);
+  }
+
+  protected closeEditServiceForm(): void {
+    this.showEditServiceForm.set(false);
+    this.editServiceIisRequestId++;
+    this.editServiceIisStatus.set(null);
+  }
+
+  private describeModalIisState(status: IisIntegrationStatus | null): { kind: 'info' | 'warning'; text: string } | null {
+    if (!status?.iisInstalled) return null;
+    if (status.requiresElevation && status.message) {
+      return { kind: 'warning', text: status.message };
+    }
+    if (status.bindingActive && !status.canProxy && status.message) {
+      return { kind: 'warning', text: status.message };
+    }
+    if (status.bindingActive && status.canProxy) {
+      return {
+        kind: 'info',
+        text: `IIS site '${status.siteName ?? 'active site'}' is already using this binding. mokkapi will publish the matching endpoints through IIS while the mock is running.`,
+      };
+    }
+    return {
+      kind: 'info',
+      text: 'IIS is installed on this machine, but it is not currently using this binding. mokkapi will listen directly unless IIS takes this port.',
+    };
   }
 
   protected scheduleServicesRailPeek(): void {
@@ -146,6 +291,10 @@ export class ServicesPageComponent implements OnDestroy {
     return 'text-5xx bg-[rgb(var(--status-5xx)/0.12)]';
   }
 
+  protected isPendingServiceAction(action: 'start' | 'stop'): boolean {
+    return this.pendingServiceAction() === action && this.pendingServiceId() === this.store.selectedServiceId();
+  }
+
   protected activeVariantStatus(ep: Endpoint): number | null {
     if (ep.variants.length === 0) return null;
     const forced = ep.forcedVariantId
@@ -190,8 +339,7 @@ export class ServicesPageComponent implements OnDestroy {
       activeScenario: 'Default',
       enabled: true,
     });
-    this.newProtocol.set('http');
-    this.showNewServiceForm.set(false);
+    this.closeNewServiceForm();
     this.showServicesRail.set(true);
     this.showEndpointsRail.set(true);
     const lastId = this.store.services().at(-1)?.id ?? null;
@@ -202,6 +350,7 @@ export class ServicesPageComponent implements OnDestroy {
     const service = this.store.selectedService();
     if (!service) return;
     this.editProtocol.set(service.protocol);
+    this.editPort.set(service.port);
     this.showEditServiceForm.set(true);
   }
 
@@ -220,16 +369,50 @@ export class ServicesPageComponent implements OnDestroy {
       protocol: this.editProtocol(),
     });
 
-    this.showEditServiceForm.set(false);
+    this.closeEditServiceForm();
   }
 
   protected async startService(): Promise<void> {
     const id = this.store.selectedServiceId();
-    if (id) await this.store.startService(id);
+    if (!id || this.pendingServiceId() === id) return;
+
+    this.pendingServiceId.set(id);
+    this.pendingServiceAction.set('start');
+    try {
+      await this.store.startService(id);
+    } finally {
+      if (this.pendingServiceId() === id) {
+        this.pendingServiceId.set(null);
+        this.pendingServiceAction.set(null);
+      }
+    }
   }
 
   protected async stopService(): Promise<void> {
     const id = this.store.selectedServiceId();
-    if (id) await this.store.stopService(id);
+    if (!id || this.pendingServiceId() === id) return;
+
+    this.pendingServiceId.set(id);
+    this.pendingServiceAction.set('stop');
+    try {
+      await this.store.stopService(id);
+    } finally {
+      if (this.pendingServiceId() === id) {
+        this.pendingServiceId.set(null);
+        this.pendingServiceAction.set(null);
+      }
+    }
+  }
+
+  protected async openIisSiteConfig(): Promise<void> {
+    const serviceId = this.store.selectedServiceId();
+    if (!serviceId) return;
+
+    this.iisConfigFeedback.set(null);
+    try {
+      await this.ipc.openIisSiteConfig(serviceId);
+    } catch (error: unknown) {
+      this.iisConfigFeedback.set(error instanceof Error ? error.message : String(error));
+    }
   }
 }
