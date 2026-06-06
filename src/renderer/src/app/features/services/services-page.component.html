@@ -164,6 +164,14 @@
                 <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
               </svg>
             </button>
+            <button class="btn btn-ghost btn-icon-sm" (click)="openExportForm()" title="Export as .NET mock">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none"
+                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <path d="M7 10l5 5 5-5"/>
+                <path d="M12 15V3"/>
+              </svg>
+            </button>
             <button class="btn btn-ghost btn-icon-sm" (click)="addEndpoint()" title="Add endpoint">
               <svg viewBox="0 0 24 24" width="13" height="13" fill="none"
                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -506,6 +514,102 @@
         <div class="flex justify-end gap-2 mt-5">
           <button class="btn btn-outline btn-sm" (click)="closeEditServiceForm()">Cancel</button>
           <button class="btn btn-sm" (click)="saveServiceEdits(editNameInput.value, editPort())">Save</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Export as .NET mock modal ──────────────────────────────────── -->
+  @if (showExportForm() && store.selectedService(); as service) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center"
+         style="background: rgba(0,0,0,0.55); backdrop-filter: blur(2px);"
+         (click)="closeExportForm()">
+      <div class="card w-[28rem] p-6"
+           (click)="$event.stopPropagation()">
+        <h2 class="font-semibold text-[15px] mb-1">Export as .NET mock</h2>
+        <p class="text-[11px] text-[rgb(var(--text-muted))] mb-4">
+          Generates a runnable .NET 10 Minimal API for
+          <span class="font-mono">{{ service.id }}</span> — run it on a headless server with no GUI.
+        </p>
+
+        <div class="flex flex-col gap-3">
+          <div>
+            <label class="label">Run targets</label>
+            <div class="flex flex-col gap-2 mt-1">
+              <label class="flex items-start gap-2.5 cursor-pointer rounded-lg border border-[rgb(var(--border))] px-3 py-2 surface">
+                <input type="checkbox" class="mt-0.5" [checked]="exportTargets().selfcontained"
+                       (change)="toggleExportTarget('selfcontained')" />
+                <span class="min-w-0">
+                  <span class="block text-xs font-medium text-[rgb(var(--text))]">Self-contained binary</span>
+                  <span class="block text-[11px] text-[rgb(var(--text-muted))]">Single executable, no .NET runtime or Docker needed (publish script).</span>
+                </span>
+              </label>
+              <label class="flex items-start gap-2.5 cursor-pointer rounded-lg border border-[rgb(var(--border))] px-3 py-2 surface">
+                <input type="checkbox" class="mt-0.5" [checked]="exportTargets().docker"
+                       (change)="toggleExportTarget('docker')" />
+                <span class="min-w-0">
+                  <span class="block text-xs font-medium text-[rgb(var(--text))]">Docker</span>
+                  <span class="block text-[11px] text-[rgb(var(--text-muted))]">Dockerfile + docker-compose.yml (host port :{{ service.port }} → container).</span>
+                </span>
+              </label>
+              <label class="flex items-start gap-2.5 cursor-pointer rounded-lg border border-[rgb(var(--border))] px-3 py-2 surface">
+                <input type="checkbox" class="mt-0.5" [checked]="exportTargets().framework"
+                       (change)="toggleExportTarget('framework')" />
+                <span class="min-w-0">
+                  <span class="block text-xs font-medium text-[rgb(var(--text))]">Framework-dependent</span>
+                  <span class="block text-[11px] text-[rgb(var(--text-muted))]">Run with <span class="font-mono">dotnet run</span> where the .NET 10 runtime is installed.</span>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="label">Output folder</label>
+            <div class="flex items-center gap-2">
+              <input class="input font-mono text-[11px] flex-1" readonly
+                     [value]="exportOutputDir() ?? 'Default: workspace/exports/' + service.id"
+                     title="{{ exportOutputDir() ?? 'workspace/exports/' + service.id }}" />
+              <button class="btn btn-outline btn-sm flex-shrink-0" type="button" (click)="chooseExportOutputDir()">Choose…</button>
+            </div>
+          </div>
+
+          @if (service.protocol === 'https') {
+            <div class="rounded-lg border border-[rgb(var(--status-4xx))/0.28] bg-[rgb(var(--status-4xx))/0.08] px-3 py-2">
+              <p class="text-[11px] text-[rgb(var(--text-muted))]">
+                This service uses HTTPS. The generated mock serves HTTP only — point your client at
+                <span class="font-mono">http://…:{{ service.port }}</span>.
+              </p>
+            </div>
+          }
+
+          @if (exportResult(); as result) {
+            <div class="rounded-lg border border-[rgb(var(--status-2xx))/0.28] bg-[rgb(var(--status-2xx))/0.08] px-3 py-2">
+              <p class="text-[11px] font-medium text-[rgb(var(--text))]">Generated {{ result.filesWritten }} files</p>
+              <p class="mt-1 text-[11px] font-mono text-[rgb(var(--text-muted))] break-all">{{ result.outputPath }}</p>
+              @if (result.warnings.length > 0) {
+                <ul class="mt-1.5 list-disc pl-4 text-[11px] text-[rgb(var(--text-muted))]">
+                  @for (w of result.warnings; track w) { <li>{{ w }}</li> }
+                </ul>
+              }
+            </div>
+          }
+
+          @if (exportError(); as err) {
+            <div class="rounded-lg border border-[rgb(var(--status-5xx))/0.28] bg-[rgb(var(--status-5xx))/0.08] px-3 py-2">
+              <p class="text-[11px] font-medium text-[rgb(var(--status-5xx))]">Export failed</p>
+              <p class="mt-1 text-[11px] text-[rgb(var(--text-muted))]">{{ err }}</p>
+            </div>
+          }
+        </div>
+
+        <div class="flex justify-end gap-2 mt-5">
+          @if (exportResult()) {
+            <button class="btn btn-outline btn-sm" (click)="openExportFolder()">Open folder</button>
+          }
+          <button class="btn btn-outline btn-sm" (click)="closeExportForm()">Close</button>
+          <button class="btn btn-sm" (click)="runExport()" [disabled]="!anyExportTarget() || exporting()">
+            {{ exporting() ? 'Generating…' : 'Generate' }}
+          </button>
         </div>
       </div>
     </div>

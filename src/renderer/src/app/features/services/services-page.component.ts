@@ -11,7 +11,7 @@ import { CertificateTrustService } from '../../data/certificate-trust.service';
 import { WorkspaceStore } from '../../data/workspace.store';
 import { IpcService } from '../../ipc/ipc.service';
 import { EndpointEditorComponent } from './endpoint-editor.component';
-import type { Endpoint, IisIntegrationStatus, ServiceProtocol } from '@shared/models';
+import type { Endpoint, ExportResult, ExportTarget, IisIntegrationStatus, ServiceProtocol } from '@shared/models';
 
 @Component({
   selector: 'app-services-page',
@@ -52,6 +52,21 @@ export class ServicesPageComponent implements OnDestroy {
   protected readonly pendingServiceAction = signal<'start' | 'stop' | null>(null);
   protected readonly pendingServiceId = signal<string | null>(null);
   protected readonly iisConfigFeedback = signal<string | null>(null);
+
+  // ── .NET export ────────────────────────────────────────────────────────────
+  protected readonly showExportForm = signal(false);
+  protected readonly exportTargets = signal<Record<ExportTarget, boolean>>({
+    selfcontained: true,
+    docker: true,
+    framework: true,
+  });
+  protected readonly exportOutputDir = signal<string | null>(null);
+  protected readonly exporting = signal(false);
+  protected readonly exportResult = signal<ExportResult | null>(null);
+  protected readonly exportError = signal<string | null>(null);
+  protected readonly anyExportTarget = computed(() =>
+    Object.values(this.exportTargets()).some(Boolean),
+  );
 
   private servicesRailPeekTimer: ReturnType<typeof setTimeout> | null = null;
   private endpointsRailPeekTimer: ReturnType<typeof setTimeout> | null = null;
@@ -414,5 +429,57 @@ export class ServicesPageComponent implements OnDestroy {
     } catch (error: unknown) {
       this.iisConfigFeedback.set(error instanceof Error ? error.message : String(error));
     }
+  }
+
+  // ── .NET export ────────────────────────────────────────────────────────────
+
+  protected openExportForm(): void {
+    if (!this.store.selectedService()) return;
+    this.exportResult.set(null);
+    this.exportError.set(null);
+    this.exportOutputDir.set(null);
+    this.showExportForm.set(true);
+  }
+
+  protected closeExportForm(): void {
+    this.showExportForm.set(false);
+  }
+
+  protected toggleExportTarget(target: ExportTarget): void {
+    this.exportTargets.update((prev) => ({ ...prev, [target]: !prev[target] }));
+  }
+
+  protected async chooseExportOutputDir(): Promise<void> {
+    const dir = await this.ipc.openExportDialog();
+    if (dir) this.exportOutputDir.set(dir);
+  }
+
+  protected async runExport(): Promise<void> {
+    const serviceId = this.store.selectedServiceId();
+    if (!serviceId || !this.anyExportTarget() || this.exporting()) return;
+
+    const targets = (Object.keys(this.exportTargets()) as ExportTarget[]).filter(
+      (t) => this.exportTargets()[t],
+    );
+
+    this.exporting.set(true);
+    this.exportResult.set(null);
+    this.exportError.set(null);
+    try {
+      const result = await this.ipc.exportService(serviceId, {
+        targets,
+        outputDir: this.exportOutputDir() ?? undefined,
+      });
+      this.exportResult.set(result);
+    } catch (error: unknown) {
+      this.exportError.set(error instanceof Error ? error.message : String(error));
+    } finally {
+      this.exporting.set(false);
+    }
+  }
+
+  protected async openExportFolder(): Promise<void> {
+    const result = this.exportResult();
+    if (result) await this.ipc.openExportFolder(result.outputPath);
   }
 }

@@ -193,6 +193,27 @@ export interface ImportResult {
   warnings: string[];
 }
 
+// ─── Export (generate a runnable .NET mock) ───────────────────────────────────
+
+/** Which run-mode artifacts to emit alongside the generated .NET project */
+export type ExportTarget = 'selfcontained' | 'docker' | 'framework';
+
+export interface ExportOptions {
+  /** Run targets to scaffold helper files for. The project itself supports all three. */
+  targets: ExportTarget[];
+  /** Output directory. When omitted, defaults to <workspace>/exports/<service-id>. */
+  outputDir?: string;
+}
+
+export interface ExportResult {
+  serviceId: string;
+  serviceName: string;
+  /** Absolute path to the generated per-service folder */
+  outputPath: string;
+  filesWritten: number;
+  warnings: string[];
+}
+
 // ─── Test client ─────────────────────────────────────────────────────────────
 
 export interface TestRequest {

@@ -10,6 +10,8 @@ import type { ServiceManager } from '../servers/service-manager';
 import type { HistoryStore } from '../history/history-store';
 import type { CertManager } from '../servers/cert-manager';
 import { importOpenApi3 } from '../importers/openapi3';
+import { exportDotnet } from '../exporters/dotnet';
+import { join } from 'path';
 
 export function registerIpcHandlers(
   workspace:  WorkspaceManager,
@@ -198,6 +200,29 @@ export function registerIpcHandlers(
     });
     return result.canceled ? null : result.filePaths[0];
   });
+
+  // ── .NET export ──────────────────────────────────────────────────────────────
+
+  ipcMain.handle(IPC.EXPORT_SERVICE, (_e, { serviceId, options }) => {
+    const svc = workspace.getService(serviceId);
+    if (!svc) throw new Error(`Service '${serviceId}' not found`);
+    const defaultBaseDir = join(workspace.getWorkspacePath(), 'exports');
+    return exportDotnet(svc, options, defaultBaseDir);
+  });
+
+  ipcMain.handle(IPC.EXPORT_OPEN_DIALOG, async () => {
+    const win = getWindow();
+    if (!win) return null;
+    const result = await dialog.showOpenDialog(win, {
+      title: 'Choose output folder for the generated .NET mock',
+      properties: ['openDirectory', 'createDirectory'],
+    });
+    return result.canceled ? null : result.filePaths[0];
+  });
+
+  ipcMain.handle(IPC.OPEN_EXPORT_FOLDER, (_e, folderPath: string) =>
+    shell.openPath(folderPath),
+  );
 
   // ── Test client ────────────────────────────────────────────────────────────
 

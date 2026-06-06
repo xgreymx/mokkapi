@@ -41,7 +41,7 @@ export class WorkspaceManager {
   // ─── Private helpers ───────────────────────────────────────────────────────
 
   private async ensureDirectories(): Promise<void> {
-    for (const sub of ['', 'services', 'certs', 'imports']) {
+    for (const sub of ['', 'services', 'certs', 'imports', 'exports']) {
       await mkdir(join(this.workspacePath, sub), { recursive: true });
     }
   }

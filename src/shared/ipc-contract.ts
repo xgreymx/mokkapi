@@ -12,6 +12,8 @@ import type {
   HistoryFilter,
   AppSettings,
   ImportResult,
+  ExportOptions,
+  ExportResult,
   TestRequest,
   TestResponse,
   ServiceRuntimeStatus,
@@ -69,6 +71,11 @@ export const IPC = {
   // OpenAPI import
   IMPORT_OPENAPI:      'import:openapi',
   OPEN_IMPORT_DIALOG:  'import:open-dialog', // returns picked file path
+
+  // .NET export
+  EXPORT_SERVICE:      'export:generate',
+  EXPORT_OPEN_DIALOG:  'export:open-dialog', // returns picked output directory
+  OPEN_EXPORT_FOLDER:  'export:open-folder',
 
   // Built-in test client
   SEND_REQUEST: 'test-client:send',
@@ -137,6 +144,11 @@ export interface MokkApiElectron {
   // Import
   importOpenApi(filePath: string, targetServiceId?: string): Promise<ImportResult>;
   openImportDialog(): Promise<string | null>; // returns picked file path or null
+
+  // Export (generate a runnable .NET mock for a service)
+  exportService(serviceId: string, options: ExportOptions): Promise<ExportResult>;
+  openExportDialog(): Promise<string | null>; // returns picked output directory or null
+  openExportFolder(folderPath: string): Promise<void>;
 
   // Test client
   sendRequest(req: TestRequest): Promise<TestResponse>;

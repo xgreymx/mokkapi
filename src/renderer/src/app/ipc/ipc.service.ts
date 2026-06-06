@@ -15,6 +15,8 @@ import type {
   HistoryFilter,
   AppSettings,
   ImportResult,
+  ExportOptions,
+  ExportResult,
   TestRequest,
   TestResponse,
   ServiceRuntimeStatus,
@@ -106,6 +108,13 @@ export class IpcService {
     return api().importOpenApi(filePath, targetServiceId);
   }
   openImportDialog(): Promise<string | null> { return api().openImportDialog(); }
+
+  // ── Export ─────────────────────────────────────────────────────────────────
+  exportService(serviceId: string, options: ExportOptions): Promise<ExportResult> {
+    return api().exportService(serviceId, options);
+  }
+  openExportDialog(): Promise<string | null> { return api().openExportDialog(); }
+  openExportFolder(folderPath: string): Promise<void> { return api().openExportFolder(folderPath); }
 
   // ── Test client ────────────────────────────────────────────────────────────
   sendRequest(req: TestRequest): Promise<TestResponse> { return api().sendRequest(req); }

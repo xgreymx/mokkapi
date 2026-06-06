@@ -1,0 +1,12 @@
+services:
+  __MOKKAPI_SERVICE_ID__:
+    build: .
+    image: mokkapi-mock-__MOKKAPI_SERVICE_ID__
+    # Host port matches the port defined for this service in mokkapi → container 8080.
+    ports:
+      - "__MOKKAPI_PORT__:8080"
+    environment:
+      - ASPNETCORE_URLS=http://0.0.0.0:8080
+      # Uncomment to switch the active scenario at runtime:
+      # - MOKKAPI_SCENARIO=Default
+    restart: unless-stopped

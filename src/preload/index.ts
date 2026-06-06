@@ -60,6 +60,12 @@ const mokkapi: MokkApiElectron = {
     ipcRenderer.invoke(IPC.IMPORT_OPENAPI, { filePath, targetServiceId }),
   openImportDialog: () => ipcRenderer.invoke(IPC.OPEN_IMPORT_DIALOG),
 
+  // ── Export ───────────────────────────────────────────────────────────────────
+  exportService: (serviceId, options) =>
+    ipcRenderer.invoke(IPC.EXPORT_SERVICE, { serviceId, options }),
+  openExportDialog: () => ipcRenderer.invoke(IPC.EXPORT_OPEN_DIALOG),
+  openExportFolder: (folderPath) => ipcRenderer.invoke(IPC.OPEN_EXPORT_FOLDER, folderPath),
+
   // ── Test client ────────────────────────────────────────────────────────────
   sendRequest: (req) => ipcRenderer.invoke(IPC.SEND_REQUEST, req),
 
