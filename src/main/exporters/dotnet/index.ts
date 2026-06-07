@@ -17,6 +17,7 @@ import programCsTemplate from './templates/Program.cs?raw';
 import mockEngineCs from './templates/MockEngine.cs?raw';
 import matcherCs from './templates/Matcher.cs?raw';
 import bodyRendererCs from './templates/BodyRenderer.cs?raw';
+import mockTlsCs from './templates/MockTls.cs?raw';
 import serviceDefinitionCs from './templates/ServiceDefinition.cs?raw';
 import csproj from './templates/MokkapiMock.csproj?raw';
 import dockerfile from './templates/Dockerfile?raw';
@@ -51,8 +52,9 @@ export async function exportDotnet(
 
   if (service.protocol === 'https') {
     warnings.push(
-      'Service uses HTTPS in mokkapi; the generated mock serves HTTP only (no TLS). ' +
-        `Point your client at http://localhost:${service.port}.`,
+      'The generated mock serves both HTTP and HTTPS, using a self-signed dev certificate ' +
+        `it generates at startup (no cert needed). It is untrusted — call https://localhost:${service.port + 1} ` +
+        'with TLS verification disabled (e.g. curl -k).',
     );
   }
   if (service.endpoints.length === 0) {
@@ -66,6 +68,7 @@ export async function exportDotnet(
     __MOKKAPI_SERVICE_ID__: service.id,
     __MOKKAPI_SERVICE_NAME__: service.name,
     __MOKKAPI_PORT__: String(service.port),
+    __MOKKAPI_HTTPS_PORT__: String(service.port + 1),
     __MOKKAPI_SCENARIO__: service.activeScenario,
   };
 
@@ -75,6 +78,7 @@ export async function exportDotnet(
     { path: join(srcDir, 'MockEngine.cs'), content: mockEngineCs },
     { path: join(srcDir, 'Matcher.cs'), content: matcherCs },
     { path: join(srcDir, 'BodyRenderer.cs'), content: bodyRendererCs },
+    { path: join(srcDir, 'MockTls.cs'), content: mockTlsCs },
     { path: join(srcDir, 'ServiceDefinition.cs'), content: serviceDefinitionCs },
     { path: join(srcDir, 'MokkapiMock.csproj'), content: csproj },
     { path: join(outputPath, 'README.md'), content: applyTokens(readme, tokens) },

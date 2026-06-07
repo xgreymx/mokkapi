@@ -5,7 +5,10 @@ This is a self-contained .NET 10 Minimal API that reproduces the endpoints, resp
 variants, match rules, scenarios and Handlebars/faker templating you defined in mokkapi —
 so you can run the mock on a **headless server** where the mokkapi desktop app can't be installed.
 
-- **Listens on port `__MOKKAPI_PORT__`** by default (the port defined for this service).
+- **Serves HTTP on port `__MOKKAPI_PORT__` and HTTPS on port `__MOKKAPI_HTTPS_PORT__`** by default
+  (both at once — no redirect). HTTPS uses a self-signed dev cert the app generates itself, so there
+  is **nothing to install, mount or configure**. It is untrusted: call it with TLS verification
+  disabled (`curl -k`, `NODE_TLS_REJECT_UNAUTHORIZED=0`, …).
 - Active scenario: **`__MOKKAPI_SCENARIO__`** (override with the `MOKKAPI_SCENARIO` env var).
 - Health check: `GET /__mokkapi/health`.
 
@@ -28,7 +31,7 @@ Dockerfile  docker-compose.yml  .dockerignore   publish-selfcontained.sh
 
 ```bash
 ./publish-selfcontained.sh            # or: ./publish-selfcontained.sh linux-arm64
-MOKKAPI_PORT=__MOKKAPI_PORT__ ./publish/MokkapiMock
+MOKKAPI_PORT=__MOKKAPI_PORT__ MOKKAPI_HTTPS_PORT=__MOKKAPI_HTTPS_PORT__ ./publish/MokkapiMock
 ```
 
 Copy `./publish/MokkapiMock` to the server and run it — no .NET runtime required.
@@ -37,7 +40,8 @@ Copy `./publish/MokkapiMock` to the server and run it — no .NET runtime requir
 
 ```bash
 docker compose up -d --build
-# serves on host port __MOKKAPI_PORT__ (mapped to container 8080)
+# HTTP  on host port __MOKKAPI_PORT__       (mapped to container 8080)
+# HTTPS on host port __MOKKAPI_HTTPS_PORT__ (mapped to container 8443)
 ```
 
 ### 3. .NET 10 SDK/runtime installed
@@ -64,8 +68,10 @@ active scenario, and all of its match rules pass. `forcedVariantId` overrides ev
   `501 no_match` response and Content-Type defaulting all mirror mokkapi exactly.
 - Faker values come from **Bogus** (the .NET equivalent of faker.js): the *shape* matches
   (`{{faker.uuid}}`, `{{faker.email}}`, …) but exact random values will differ run to run.
-- **HTTP only.** If the service used HTTPS in mokkapi, TLS is not reproduced here — point
-  your client at `http://…:__MOKKAPI_PORT__`. Put it behind a reverse proxy if you need TLS.
+- **HTTP + HTTPS, self-signed cert.** The mock serves both `http://…:__MOKKAPI_PORT__` and
+  `https://…:__MOKKAPI_HTTPS_PORT__`. The TLS certificate is generated in-process at startup
+  (no file to provide/mount), so it is **self-signed and untrusted** — disable TLS verification in
+  your client (`curl -k`, etc.). For a trusted cert in production, put it behind a reverse proxy.
 - Request history is logged to **stdout** (not persisted to SQLite as in the desktop app).
 - **Block helpers + adjacent braces:** simple expressions like `{{x}}` work even right
   before a `}` (e.g. `{"n":{{x}}}`). Inside a block helper, though, an expression placed

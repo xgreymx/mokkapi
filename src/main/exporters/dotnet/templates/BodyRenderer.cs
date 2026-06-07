@@ -46,9 +46,11 @@ public static class BodyRenderer
     // A simple mustache: {{ expr }} with no inner braces, closed by the FIRST }} (not greedy).
     private static readonly Regex MustacheToken = new(@"\{\{\s*([^{}]+?)\s*\}\}", RegexOptions.Compiled);
 
-    // Private-use code points — won't occur in real JSON/XML/text bodies.
-    private const char SentinelOpen = '';
-    private const char SentinelClose = '';
+    // Private-use code points (U+E000 / U+E001) -- won't occur in real JSON/XML/text
+    // bodies. Written as \u escapes so they stay visible/editable in source; the
+    // literal characters render as invisible blanks in editors.
+    private const char SentinelOpen = '\uE000';
+    private const char SentinelClose = '\uE001';
 
     public static string Render(
         string template,
