@@ -2,20 +2,14 @@ using MokkapiMock;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Supply a default server certificate for any HTTPS endpoint so TLS works with zero
-// setup — the mock generates its own self-signed cert (see MockTls); you never provide,
-// mount or install one. Applies whether HTTPS is bound via env vars or by us below.
+// HTTPS uses a self-signed cert generated at startup (see MockTls) - nothing to install.
 builder.WebHost.ConfigureKestrel(kestrel =>
     kestrel.ConfigureHttpsDefaults(https => https.ServerCertificate = MockTls.CreateSelfSigned()));
 
 var app = builder.Build();
 
-// Port binding. The modern ASP.NET env vars win when set (ASPNETCORE_URLS, or the
-// .NET 8+ ASPNETCORE_HTTP_PORTS / ASPNETCORE_HTTPS_PORTS) — that's the Docker path.
-// Otherwise (local / framework-dependent / self-contained) bind BOTH schemes directly:
-//   http  → MOKKAPI_PORT      else the port baked at export time
-//   https → MOKKAPI_HTTPS_PORT else http port + 1
-// Both are served side by side (no HTTPS redirect) — a dev mock needs http AND https.
+// If ports aren't set via ASPNETCORE_* env vars (the Docker path), bind both schemes
+// here: http = MOKKAPI_PORT (else baked port), https = MOKKAPI_HTTPS_PORT (else http+1).
 var envConfigured =
     !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ASPNETCORE_URLS"))
     || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ASPNETCORE_HTTP_PORTS"))
@@ -29,12 +23,9 @@ if (!envConfigured)
     app.Urls.Add($"https://0.0.0.0:{httpsPort}");
 }
 
-static int ResolvePort(string envName, int fallback) =>
-    int.TryParse(Environment.GetEnvironmentVariable(envName), out var p) ? p : fallback;
-
 // CORS passthrough based on the service config (mirrors mokkapi's onSend hook:
 // permissive methods/headers, configured origins joined or "*"). Applied to every
-// response — including the 501 no_match — exactly like mokkapi.
+// response - including the 501 no_match - exactly like mokkapi.
 app.Use(async (ctx, next) =>
 {
     var origins = ServiceInfo.AllowedOrigins.Length > 0
@@ -54,7 +45,7 @@ app.MapGet("/__mokkapi/health", () => Results.Json(new
     scenario = MockEngine.ActiveScenario(),
 }));
 
-// ── Generated endpoint registrations ──────────────────────────────────────────
+// - Generated endpoint registrations -
 // __MOKKAPI_ROUTE_REGISTRATIONS__
 
 // Anything that matches no registered route answers with mokkapi's 501 no_match
@@ -62,6 +53,9 @@ app.MapGet("/__mokkapi/health", () => Results.Json(new
 app.MapFallback(MockEngine.HandleNoMatch);
 
 var boundUrls = app.Urls.Count > 0 ? string.Join(", ", app.Urls) : "(configured via ASPNETCORE_* env)";
-Console.WriteLine($"[mokkapi-mock] '{ServiceInfo.Name}' ready — active scenario '{MockEngine.ActiveScenario()}' — listening on {boundUrls}");
+Console.WriteLine($"[mokkapi-mock] '{ServiceInfo.Name}' ready - active scenario '{MockEngine.ActiveScenario()}' - listening on {boundUrls}");
 
 app.Run();
+
+static int ResolvePort(string envName, int fallback) =>
+    int.TryParse(Environment.GetEnvironmentVariable(envName), out var p) ? p : fallback;

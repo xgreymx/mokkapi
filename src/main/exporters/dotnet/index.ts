@@ -1,5 +1,5 @@
 /**
- * .NET 10 exporter — turns a mokkapi Service into a runnable, self-contained mock
+ * .NET 10 exporter - turns a mokkapi Service into a runnable, self-contained mock
  * API project under <outputDir>/<service-id>/. Hybrid shape: explicit route per
  * endpoint (Program.cs) + a shared engine (MockEngine/Matcher/BodyRenderer) that
  * faithfully ports mokkapi's matching and Handlebars/faker rendering.
@@ -53,12 +53,12 @@ export async function exportDotnet(
   if (service.protocol === 'https') {
     warnings.push(
       'The generated mock serves both HTTP and HTTPS, using a self-signed dev certificate ' +
-        `it generates at startup (no cert needed). It is untrusted — call https://localhost:${service.port + 1} ` +
+        `it generates at startup (no cert needed). It is untrusted - call https://localhost:${service.port + 1} ` +
         'with TLS verification disabled (e.g. curl -k).',
     );
   }
   if (service.endpoints.length === 0) {
-    warnings.push('Service has no endpoints — the mock will return 404/no routes.');
+    warnings.push('Service has no endpoints - the mock will return 404/no routes.');
   }
 
   const programCs = programCsTemplate.replace(ROUTE_PLACEHOLDER, emitted.routeRegistrations || '// (no endpoints defined)');
@@ -94,7 +94,7 @@ export async function exportDotnet(
   if (targets.has('selfcontained')) {
     files.push({ path: join(outputPath, 'publish-selfcontained.sh'), content: applyTokens(publishScript, tokens) });
   }
-  // 'framework' needs no extra files — covered by the project itself + README.
+  // 'framework' needs no extra files - covered by the project itself + README.
 
   await Promise.all(files.map((f) => writeFile(f.path, f.content, 'utf-8')));
 

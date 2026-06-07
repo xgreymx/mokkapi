@@ -18,4 +18,4 @@ echo
 echo "Built: $HERE/publish/MokkapiMock"
 echo "Run:   MOKKAPI_PORT=__MOKKAPI_PORT__ MOKKAPI_HTTPS_PORT=__MOKKAPI_HTTPS_PORT__ $HERE/publish/MokkapiMock"
 echo "       Serves HTTP on __MOKKAPI_PORT__ and HTTPS on __MOKKAPI_HTTPS_PORT__ (defaults if unset)."
-echo "       HTTPS uses a self-signed dev cert — call it with TLS verification off (curl -k)."
+echo "       HTTPS uses a self-signed dev cert - call it with TLS verification off (curl -k)."
