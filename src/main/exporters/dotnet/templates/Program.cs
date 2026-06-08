@@ -18,7 +18,7 @@ var envConfigured =
 if (!envConfigured)
 {
     var httpPort = ResolvePort("MOKKAPI_PORT", ServiceInfo.Port);
-    var httpsPort = ResolvePort("MOKKAPI_HTTPS_PORT", httpPort + 1);
+    var httpsPort = ResolvePort("MOKKAPI_HTTPS_PORT", httpPort < 65535 ? httpPort + 1 : httpPort - 1);
     app.Urls.Add($"http://0.0.0.0:{httpPort}");
     app.Urls.Add($"https://0.0.0.0:{httpsPort}");
 }

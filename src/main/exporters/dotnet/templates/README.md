@@ -21,6 +21,7 @@ src/
   MockEngine.cs         per-request: normalise -> select variant -> render -> respond
   Matcher.cs            variant selection + header/query/JSONPath match rules
   BodyRenderer.cs       Handlebars + faker (Bogus) body templating
+  MockTls.cs            self-signed dev certificate for HTTPS
   ServiceDefinition.cs  data model + JSON helpers
 Dockerfile  docker-compose.yml  .dockerignore   publish-selfcontained.sh
 ```

@@ -50,10 +50,13 @@ export async function exportDotnet(
   const emitted = emitEndpoints(service);
   warnings.push(...emitted.warnings);
 
+  // HTTPS listens on the port next to the HTTP one (down a step at the 65535 ceiling).
+  const httpsPort = service.port < 65535 ? service.port + 1 : service.port - 1;
+
   if (service.protocol === 'https') {
     warnings.push(
       'The generated mock serves both HTTP and HTTPS, using a self-signed dev certificate ' +
-        `it generates at startup (no cert needed). It is untrusted - call https://localhost:${service.port + 1} ` +
+        `it generates at startup (no cert needed). It is untrusted - call https://localhost:${httpsPort} ` +
         'with TLS verification disabled (e.g. curl -k).',
     );
   }
@@ -68,7 +71,7 @@ export async function exportDotnet(
     __MOKKAPI_SERVICE_ID__: service.id,
     __MOKKAPI_SERVICE_NAME__: service.name,
     __MOKKAPI_PORT__: String(service.port),
-    __MOKKAPI_HTTPS_PORT__: String(service.port + 1),
+    __MOKKAPI_HTTPS_PORT__: String(httpsPort),
     __MOKKAPI_SCENARIO__: service.activeScenario,
   };
 

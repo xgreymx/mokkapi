@@ -48,10 +48,10 @@ public static class BodyRenderer
 
     // Readable, brace-free placeholder for lifting a simple {{expr}} out of the template
     // before Handlebars compiles the scaffold, then swapping the rendered value back in.
-    // Plain ASCII (so the source and any dumped scaffold stay readable) and distinctive
-    // enough not to collide with real JSON/XML/text bodies.
-    private const string SlotOpen = "[[mokkapi-slot:";
-    private const string SlotClose = "]]";
+    // The per-render nonce (see Render) keeps it human-readable yet impossible to collide
+    // with body content or client-supplied values.
+    private const string SlotPrefix = "[[mokkapi-slot:";
+    private const string SlotSuffix = "]]";
 
     public static string Render(
         string template,
@@ -74,7 +74,9 @@ public static class BodyRenderer
             };
 
             var faker = FakerToken.Replace(template, "{{$1faker_$2");
-            var (scaffold, slots) = ExtractSimpleExpressions(faker);
+            // Fresh nonce per render: markers can't clash with body text or client input.
+            var slotKey = Guid.NewGuid().ToString("N");
+            var (scaffold, slots) = ExtractSimpleExpressions(faker, slotKey);
 
             // Render the scaffold (block helpers, partials, comments). Simple expressions
             // are now plain markers - inert literal text - so brace adjacency can't bite.
@@ -109,7 +111,7 @@ public static class BodyRenderer
     /// brace-free marker, returning the scaffold and the marker->expression map.
     /// Block helpers, comments, partials, inverse sections and {{else}} are preserved.
     /// </summary>
-    private static (string scaffold, List<(string marker, string expr)> slots) ExtractSimpleExpressions(string template)
+    private static (string scaffold, List<(string marker, string expr)> slots) ExtractSimpleExpressions(string template, string slotKey)
     {
         var slots = new List<(string, string)>();
         var sb = new StringBuilder();
@@ -141,7 +143,7 @@ public static class BodyRenderer
             }
             else if (depth == 0)
             {
-                var marker = $"{SlotOpen}{index++}{SlotClose}";
+                var marker = $"{SlotPrefix}{slotKey}:{index++}{SlotSuffix}";
                 slots.Add((marker, bodyExpr));
                 sb.Append(marker);
             }

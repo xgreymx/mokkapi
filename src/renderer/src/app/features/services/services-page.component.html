@@ -594,7 +594,7 @@
             </div>
           }
 
-          @if (!exporting() && exportResult(); as result) {
+          @if (exportResult(); as result) {
             <div class="rounded-lg border border-[rgb(var(--status-2xx))/0.28] bg-[rgb(var(--status-2xx))/0.08] px-3 py-2">
               <p class="flex items-center gap-1.5 text-[11px] font-medium text-[rgb(var(--text))]">
                 <svg class="h-3.5 w-3.5 text-[rgb(var(--status-2xx))]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
