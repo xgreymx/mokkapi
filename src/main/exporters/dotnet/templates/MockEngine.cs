@@ -6,8 +6,8 @@ namespace MokkapiMock;
 
 /// <summary>
 /// Request handler shared by every generated route. Port of the per-request logic
-/// in mokkapi's src/main/servers/service-host.ts: normalise → select variant →
-/// delay → render → write, with a 501 no_match fallback. Logs each request to
+/// in mokkapi's src/main/servers/service-host.ts: normalise -> select variant ->
+/// delay -> render -> write, with a 501 no_match fallback. Logs each request to
 /// stdout (headless-friendly; no SQLite history in the generated mock).
 /// </summary>
 public static class MockEngine
@@ -27,7 +27,7 @@ public static class MockEngine
     {
         var startMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-        // ── Normalise incoming request ────────────────────────────────────────
+        // - Normalise incoming request -
         var headers = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var h in ctx.Request.Headers)
             headers[h.Key.ToLowerInvariant()] = h.Value.ToString();
@@ -45,7 +45,7 @@ public static class MockEngine
         var (rawBody, parsedBody) = await ReadBodyAsync(ctx.Request, contentType);
         _ = rawBody; // captured for parity/extension; not persisted in the generated mock
 
-        // ── Select variant + build response ───────────────────────────────────
+        // - Select variant + build response -
         var scenario = ActiveScenario();
         var variant = Matcher.SelectVariant(endpoint, scenario, query, headers, parsedBody);
 
@@ -75,7 +75,7 @@ public static class MockEngine
             $"[mokkapi-mock] {ctx.Request.Method} {ctx.Request.Path}{ctx.Request.QueryString} -> {status} ({durationMs}ms)"
             + (variant is not null ? $" [{variant.Name}]" : ""));
 
-        // ── Send response ─────────────────────────────────────────────────────
+        // - Send response -
         ctx.Response.StatusCode = status;
         foreach (var kv in resHeaders)
             ctx.Response.Headers[kv.Key] = kv.Value;

@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace MokkapiMock;
 
-// ─── Data model (mirrors mokkapi's src/shared/models.ts) ─────────────────────────
+// - Data model (mirrors mokkapi's src/shared/models.ts) -
 
 public sealed class EndpointDef
 {
@@ -53,7 +53,7 @@ public sealed class JsonPathRule
 
 /// <summary>
 /// A JSON boolean that renders as JS-style "true"/"false" when echoed in a Handlebars
-/// template (C# bool.ToString() is "True"/"False" → invalid JSON), but serialises back
+/// template (C# bool.ToString() is "True"/"False" -> invalid JSON), but serialises back
 /// to a real boolean for {{json}} and compares correctly in match rules.
 /// </summary>
 [JsonConverter(typeof(JsBoolConverter))]
@@ -73,7 +73,7 @@ public sealed class JsBoolConverter : JsonConverter<JsBool>
         => writer.WriteBooleanValue(value.Value);
 }
 
-// ─── JSON normalisation: JsonElement → string/double/JsBool/null/Dictionary/List ─
+// - JSON normalisation: JsonElement -> string/double/JsBool/null/Dictionary/List -
 // Keeps EvalJsonPath and the Handlebars context working on plain CLR objects, the
 // same shape mokkapi's renderer/matcher operate on (JS values from JSON.parse).
 

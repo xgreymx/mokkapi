@@ -1,24 +1,31 @@
 using MokkapiMock;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// HTTPS uses a self-signed cert generated at startup (see MockTls) - nothing to install.
+builder.WebHost.ConfigureKestrel(kestrel =>
+    kestrel.ConfigureHttpsDefaults(https => https.ServerCertificate = MockTls.CreateSelfSigned()));
+
 var app = builder.Build();
 
-// Resolve the listen URL:
-//   ASPNETCORE_URLS (if set) wins — used by the Docker image (container port 8080).
-//   else MOKKAPI_PORT, else the service's configured port baked at export time.
-// Binding the service port directly means CDI-PUI's expected URL works for local
-// and self-contained runs without any port mapping.
-var configuredUrls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS");
-if (string.IsNullOrWhiteSpace(configuredUrls))
+// If ports aren't set via ASPNETCORE_* env vars (the Docker path), bind both schemes
+// here: http = MOKKAPI_PORT (else baked port), https = MOKKAPI_HTTPS_PORT (else http+1).
+var envConfigured =
+    !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ASPNETCORE_URLS"))
+    || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ASPNETCORE_HTTP_PORTS"))
+    || !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ASPNETCORE_HTTPS_PORTS"));
+
+if (!envConfigured)
 {
-    var portEnv = Environment.GetEnvironmentVariable("MOKKAPI_PORT");
-    var port = int.TryParse(portEnv, out var p) ? p : ServiceInfo.Port;
-    app.Urls.Add($"http://0.0.0.0:{port}");
+    var httpPort = ResolvePort("MOKKAPI_PORT", ServiceInfo.Port);
+    var httpsPort = ResolvePort("MOKKAPI_HTTPS_PORT", httpPort < 65535 ? httpPort + 1 : httpPort - 1);
+    app.Urls.Add($"http://0.0.0.0:{httpPort}");
+    app.Urls.Add($"https://0.0.0.0:{httpsPort}");
 }
 
 // CORS passthrough based on the service config (mirrors mokkapi's onSend hook:
 // permissive methods/headers, configured origins joined or "*"). Applied to every
-// response — including the 501 no_match — exactly like mokkapi.
+// response - including the 501 no_match - exactly like mokkapi.
 app.Use(async (ctx, next) =>
 {
     var origins = ServiceInfo.AllowedOrigins.Length > 0
@@ -38,13 +45,17 @@ app.MapGet("/__mokkapi/health", () => Results.Json(new
     scenario = MockEngine.ActiveScenario(),
 }));
 
-// ── Generated endpoint registrations ──────────────────────────────────────────
+// - Generated endpoint registrations -
 // __MOKKAPI_ROUTE_REGISTRATIONS__
 
 // Anything that matches no registered route answers with mokkapi's 501 no_match
 // (the desktop app's catch-all behaves this way; ASP.NET would otherwise 404).
 app.MapFallback(MockEngine.HandleNoMatch);
 
-Console.WriteLine($"[mokkapi-mock] '{ServiceInfo.Name}' ready — active scenario '{MockEngine.ActiveScenario()}'");
+var boundUrls = app.Urls.Count > 0 ? string.Join(", ", app.Urls) : "(configured via ASPNETCORE_* env)";
+Console.WriteLine($"[mokkapi-mock] '{ServiceInfo.Name}' ready - active scenario '{MockEngine.ActiveScenario()}' - listening on {boundUrls}");
 
 app.Run();
+
+static int ResolvePort(string envName, int fallback) =>
+    int.TryParse(Environment.GetEnvironmentVariable(envName), out var p) ? p : fallback;

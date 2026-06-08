@@ -1,5 +1,5 @@
 /**
- * .NET 10 exporter — turns a mokkapi Service into a runnable, self-contained mock
+ * .NET 10 exporter - turns a mokkapi Service into a runnable, self-contained mock
  * API project under <outputDir>/<service-id>/. Hybrid shape: explicit route per
  * endpoint (Program.cs) + a shared engine (MockEngine/Matcher/BodyRenderer) that
  * faithfully ports mokkapi's matching and Handlebars/faker rendering.
@@ -17,6 +17,7 @@ import programCsTemplate from './templates/Program.cs?raw';
 import mockEngineCs from './templates/MockEngine.cs?raw';
 import matcherCs from './templates/Matcher.cs?raw';
 import bodyRendererCs from './templates/BodyRenderer.cs?raw';
+import mockTlsCs from './templates/MockTls.cs?raw';
 import serviceDefinitionCs from './templates/ServiceDefinition.cs?raw';
 import csproj from './templates/MokkapiMock.csproj?raw';
 import dockerfile from './templates/Dockerfile?raw';
@@ -49,14 +50,18 @@ export async function exportDotnet(
   const emitted = emitEndpoints(service);
   warnings.push(...emitted.warnings);
 
+  // HTTPS listens on the port next to the HTTP one (down a step at the 65535 ceiling).
+  const httpsPort = service.port < 65535 ? service.port + 1 : service.port - 1;
+
   if (service.protocol === 'https') {
     warnings.push(
-      'Service uses HTTPS in mokkapi; the generated mock serves HTTP only (no TLS). ' +
-        `Point your client at http://localhost:${service.port}.`,
+      'The generated mock serves both HTTP and HTTPS, using a self-signed dev certificate ' +
+        `it generates at startup (no cert needed). It is untrusted - call https://localhost:${httpsPort} ` +
+        'with TLS verification disabled (e.g. curl -k).',
     );
   }
   if (service.endpoints.length === 0) {
-    warnings.push('Service has no endpoints — the mock will return 404/no routes.');
+    warnings.push('Service has no endpoints - the mock will return 404/no routes.');
   }
 
   const programCs = programCsTemplate.replace(ROUTE_PLACEHOLDER, emitted.routeRegistrations || '// (no endpoints defined)');
@@ -66,6 +71,7 @@ export async function exportDotnet(
     __MOKKAPI_SERVICE_ID__: service.id,
     __MOKKAPI_SERVICE_NAME__: service.name,
     __MOKKAPI_PORT__: String(service.port),
+    __MOKKAPI_HTTPS_PORT__: String(httpsPort),
     __MOKKAPI_SCENARIO__: service.activeScenario,
   };
 
@@ -75,6 +81,7 @@ export async function exportDotnet(
     { path: join(srcDir, 'MockEngine.cs'), content: mockEngineCs },
     { path: join(srcDir, 'Matcher.cs'), content: matcherCs },
     { path: join(srcDir, 'BodyRenderer.cs'), content: bodyRendererCs },
+    { path: join(srcDir, 'MockTls.cs'), content: mockTlsCs },
     { path: join(srcDir, 'ServiceDefinition.cs'), content: serviceDefinitionCs },
     { path: join(srcDir, 'MokkapiMock.csproj'), content: csproj },
     { path: join(outputPath, 'README.md'), content: applyTokens(readme, tokens) },
@@ -90,7 +97,7 @@ export async function exportDotnet(
   if (targets.has('selfcontained')) {
     files.push({ path: join(outputPath, 'publish-selfcontained.sh'), content: applyTokens(publishScript, tokens) });
   }
-  // 'framework' needs no extra files — covered by the project itself + README.
+  // 'framework' needs no extra files - covered by the project itself + README.
 
   await Promise.all(files.map((f) => writeFile(f.path, f.content, 'utf-8')));
 

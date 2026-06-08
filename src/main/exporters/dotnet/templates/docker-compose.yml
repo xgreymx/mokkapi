@@ -2,11 +2,14 @@ services:
   __MOKKAPI_SERVICE_ID__:
     build: .
     image: mokkapi-mock-__MOKKAPI_SERVICE_ID__
-    # Host port matches the port defined for this service in mokkapi → container 8080.
+    # Host ports map to the container's HTTP (8080) and HTTPS (8443) listeners.
     ports:
       - "__MOKKAPI_PORT__:8080"
+      - "__MOKKAPI_HTTPS_PORT__:8443"
     environment:
-      - ASPNETCORE_URLS=http://0.0.0.0:8080
+      # No cert volume/config needed - the app self-generates its TLS cert.
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ASPNETCORE_HTTPS_PORTS=8443
       # Uncomment to switch the active scenario at runtime:
       # - MOKKAPI_SCENARIO=Default
     restart: unless-stopped

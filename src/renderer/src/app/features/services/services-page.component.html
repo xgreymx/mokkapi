@@ -574,17 +574,34 @@
           </div>
 
           @if (service.protocol === 'https') {
-            <div class="rounded-lg border border-[rgb(var(--status-4xx))/0.28] bg-[rgb(var(--status-4xx))/0.08] px-3 py-2">
+            <div class="rounded-lg border border-[rgb(var(--primary))/0.24] bg-[rgb(var(--primary))/0.08] px-3 py-2">
               <p class="text-[11px] text-[rgb(var(--text-muted))]">
-                This service uses HTTPS. The generated mock serves HTTP only — point your client at
-                <span class="font-mono">http://…:{{ service.port }}</span>.
+                The mock serves both <span class="font-mono">http://…:{{ service.port }}</span> and
+                <span class="font-mono">https://…:{{ service.port + 1 }}</span> using a self-signed dev
+                certificate it generates itself (nothing to install). HTTPS is untrusted — call it with
+                TLS verification off (e.g. <span class="font-mono">curl -k</span>).
               </p>
+            </div>
+          }
+
+          @if (exporting()) {
+            <div class="flex items-center gap-2 rounded-lg border border-[rgb(var(--primary))/0.24] bg-[rgb(var(--primary))/0.08] px-3 py-2">
+              <svg class="h-3.5 w-3.5 animate-spin text-[rgb(var(--primary))]" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity="0.25" stroke-width="3"></circle>
+                <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
+              </svg>
+              <p class="text-[11px] font-medium text-[rgb(var(--text))]">Generating .NET project…</p>
             </div>
           }
 
           @if (exportResult(); as result) {
             <div class="rounded-lg border border-[rgb(var(--status-2xx))/0.28] bg-[rgb(var(--status-2xx))/0.08] px-3 py-2">
-              <p class="text-[11px] font-medium text-[rgb(var(--text))]">Generated {{ result.filesWritten }} files</p>
+              <p class="flex items-center gap-1.5 text-[11px] font-medium text-[rgb(var(--text))]">
+                <svg class="h-3.5 w-3.5 text-[rgb(var(--status-2xx))]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 6 9 17l-5-5"></path>
+                </svg>
+                Generated {{ result.filesWritten }} files
+              </p>
               <p class="mt-1 text-[11px] font-mono text-[rgb(var(--text-muted))] break-all">{{ result.outputPath }}</p>
               @if (result.warnings.length > 0) {
                 <ul class="mt-1.5 list-disc pl-4 text-[11px] text-[rgb(var(--text-muted))]">
@@ -607,8 +624,16 @@
             <button class="btn btn-outline btn-sm" (click)="openExportFolder()">Open folder</button>
           }
           <button class="btn btn-outline btn-sm" (click)="closeExportForm()">Close</button>
-          <button class="btn btn-sm" (click)="runExport()" [disabled]="!anyExportTarget() || exporting()">
-            {{ exporting() ? 'Generating…' : 'Generate' }}
+          <button class="btn btn-sm inline-flex items-center gap-1.5" (click)="runExport()" [disabled]="!anyExportTarget() || exporting()">
+            @if (exporting()) {
+              <svg class="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity="0.25" stroke-width="3"></circle>
+                <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
+              </svg>
+              Generating…
+            } @else {
+              Generate
+            }
           </button>
         </div>
       </div>

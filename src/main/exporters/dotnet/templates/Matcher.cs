@@ -24,7 +24,7 @@ public static class Matcher
             if (forced is not null) return forced;
         }
 
-        // Walk variants in declaration order — first passing variant wins
+        // Walk variants in declaration order - first passing variant wins
         foreach (var v in endpoint.Variants)
         {
             if (!ScenarioApplies(v.Scenarios, scenario)) continue;
@@ -88,7 +88,7 @@ public static class Matcher
         return false;
     }
 
-    /// <summary>Minimal dotted JSONPath evaluator — supports $.a.b.c and $.a[0].b.</summary>
+    /// <summary>Minimal dotted JSONPath evaluator - supports $.a.b.c and $.a[0].b.</summary>
     private static object? EvalJsonPath(object? obj, string path)
     {
         if (!path.StartsWith("$.")) return null;

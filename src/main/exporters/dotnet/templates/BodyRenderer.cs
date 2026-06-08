@@ -14,17 +14,17 @@ namespace MokkapiMock;
 /// {{upper}}, {{lower}}, {{json}} helpers.
 ///
 /// Three parity details that matter:
-///   1. HTML escaping is DISABLED (TextEncoder = null) — mokkapi compiles with
+///   1. HTML escaping is DISABLED (TextEncoder = null) - mokkapi compiles with
 ///      noEscape:true; otherwise JSON bodies with &lt; or &amp; would corrupt.
 ///   2. mokkapi registers dotted helper names like "faker.uuid". Handlebars.Net parses
 ///      {{faker.uuid}} as a context path, not a helper. We rewrite the leading
-///      `faker.x` token to `faker_x` and register the helpers under those names —
+///      `faker.x` token to `faker_x` and register the helpers under those names -
 ///      behaviour-equivalent, templates stay unchanged.
 ///   3. Handlebars.Net greedily consumes a run of '}' at a mustache close, so a simple
 ///      expression immediately followed by a JSON brace (e.g. {"amount":{{x}}}) either
-///      fails to parse or drops the trailing brace — yet Handlebars.js (mokkapi) renders
+///      fails to parse or drops the trailing brace - yet Handlebars.js (mokkapi) renders
 ///      it correctly. We therefore EXTRACT top-level simple expressions into brace-free
-///      sentinels, let Handlebars.Net render the scaffold (so block helpers like
+///      markers, let Handlebars.Net render the scaffold (so block helpers like
 ///      {{#each}} still work), then evaluate each extracted expression in isolation
 ///      (no adjacent brace) and substitute the result back.
 /// </summary>
@@ -46,9 +46,12 @@ public static class BodyRenderer
     // A simple mustache: {{ expr }} with no inner braces, closed by the FIRST }} (not greedy).
     private static readonly Regex MustacheToken = new(@"\{\{\s*([^{}]+?)\s*\}\}", RegexOptions.Compiled);
 
-    // Private-use code points — won't occur in real JSON/XML/text bodies.
-    private const char SentinelOpen = '';
-    private const char SentinelClose = '';
+    // Readable, brace-free placeholder for lifting a simple {{expr}} out of the template
+    // before Handlebars compiles the scaffold, then swapping the rendered value back in.
+    // The per-render nonce (see Render) keeps it human-readable yet impossible to collide
+    // with body content or client-supplied values.
+    private const string SlotPrefix = "[[mokkapi-slot:";
+    private const string SlotSuffix = "]]";
 
     public static string Render(
         string template,
@@ -71,14 +74,16 @@ public static class BodyRenderer
             };
 
             var faker = FakerToken.Replace(template, "{{$1faker_$2");
-            var (scaffold, slots) = ExtractSimpleExpressions(faker);
+            // Fresh nonce per render: markers can't clash with body text or client input.
+            var slotKey = Guid.NewGuid().ToString("N");
+            var (scaffold, slots) = ExtractSimpleExpressions(faker, slotKey);
 
             // Render the scaffold (block helpers, partials, comments). Simple expressions
-            // are now sentinels — inert literal text — so brace adjacency can't bite.
+            // are now plain markers - inert literal text - so brace adjacency can't bite.
             var rendered = Hb.Compile(scaffold)(context);
 
-            foreach (var (sentinel, expr) in slots)
-                rendered = rendered.Replace(sentinel, RenderExpression(expr, context));
+            foreach (var (marker, expr) in slots)
+                rendered = rendered.Replace(marker, RenderExpression(expr, context));
 
             return rendered;
         }
@@ -99,14 +104,14 @@ public static class BodyRenderer
         _ => "application/octet-stream",
     };
 
-    // ── Internals ────────────────────────────────────────────────────────────────
+    // - Internals -
 
     /// <summary>
     /// Replaces every top-level (not inside a block helper) simple mustache with a
-    /// brace-free sentinel, returning the scaffold and the sentinel→expression map.
+    /// brace-free marker, returning the scaffold and the marker->expression map.
     /// Block helpers, comments, partials, inverse sections and {{else}} are preserved.
     /// </summary>
-    private static (string scaffold, List<(string sentinel, string expr)> slots) ExtractSimpleExpressions(string template)
+    private static (string scaffold, List<(string marker, string expr)> slots) ExtractSimpleExpressions(string template, string slotKey)
     {
         var slots = new List<(string, string)>();
         var sb = new StringBuilder();
@@ -138,13 +143,13 @@ public static class BodyRenderer
             }
             else if (depth == 0)
             {
-                var sentinel = $"{SentinelOpen}{index++}{SentinelClose}";
-                slots.Add((sentinel, bodyExpr));
-                sb.Append(sentinel);
+                var marker = $"{SlotPrefix}{slotKey}:{index++}{SlotSuffix}";
+                slots.Add((marker, bodyExpr));
+                sb.Append(marker);
             }
             else
             {
-                // Inside a block helper — leave for Handlebars.Net to render in scope.
+                // Inside a block helper - leave for Handlebars.Net to render in scope.
                 sb.Append(m.Value);
             }
         }
@@ -173,7 +178,7 @@ public static class BodyRenderer
 
         var f = () => Fkr.Value!;
 
-        // ── Faker helpers (registered as faker_*; see class summary) ──────────────
+        // - Faker helpers (registered as faker_*; see class summary) -
         R("faker_uuid", _ => f().Random.Guid().ToString());
         R("faker_name", _ => f().Name.FullName());
         R("faker_firstName", _ => f().Name.FirstName());
@@ -196,12 +201,12 @@ public static class BodyRenderer
         R("faker_street", _ => f().Address.StreetAddress());
         R("faker_zip", _ => f().Address.ZipCode());
 
-        // ── Time helpers ─────────────────────────────────────────────────────────
+        // - Time helpers -
         R("now", _ => DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"));
         R("nowMs", _ => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
         R("timestamp", _ => DateTimeOffset.UtcNow.ToUnixTimeSeconds());
 
-        // ── String helpers ───────────────────────────────────────────────────────
+        // - String helpers -
         R("upper", a => (a.Length > 0 ? a[0]?.ToString() : "")?.ToUpperInvariant() ?? "");
         R("lower", a => (a.Length > 0 ? a[0]?.ToString() : "")?.ToLowerInvariant() ?? "");
         R("json", a => JsonSerializer.Serialize(a.Length > 0 ? a[0] : null, JsonOpts));
