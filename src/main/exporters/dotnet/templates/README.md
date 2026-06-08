@@ -69,10 +69,12 @@ active scenario, and all of its match rules pass. `forcedVariantId` overrides ev
   `501 no_match` response and Content-Type defaulting all mirror mokkapi exactly.
 - Faker values come from **Bogus** (the .NET equivalent of faker.js): the *shape* matches
   (`{{faker.uuid}}`, `{{faker.email}}`, ...) but exact random values will differ run to run.
-- **HTTP + HTTPS, self-signed cert.** The mock serves both `http://...:__MOKKAPI_PORT__` and
-  `https://...:__MOKKAPI_HTTPS_PORT__`. The TLS certificate is generated in-process at startup
-  (no file to provide/mount), so it is **self-signed and untrusted** - disable TLS verification in
-  your client (`curl -k`, etc.). For a trusted cert in production, put it behind a reverse proxy.
+- **HTTP + HTTPS.** The mock serves both `http://...:__MOKKAPI_PORT__` and
+  `https://...:__MOKKAPI_HTTPS_PORT__`. If a certificate was chosen at export it is bundled at
+  `src/certs/server.crt` + `server.key` and used as-is (so a CA-signed/dev cert is trusted where
+  that CA is). Otherwise the cert is generated in-process at startup and is **self-signed and
+  untrusted** - disable TLS verification in your client (`curl -k`, etc.), or put it behind a
+  reverse proxy with a real cert for production.
 - Request history is logged to **stdout** (not persisted to SQLite as in the desktop app).
 - **Block helpers + adjacent braces:** simple expressions like `{{x}}` work even right
   before a `}` (e.g. `{"n":{{x}}}`). Inside a block helper, though, an expression placed

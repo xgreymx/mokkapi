@@ -2,9 +2,9 @@ using MokkapiMock;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// HTTPS uses a self-signed cert generated at startup (see MockTls) - nothing to install.
+// HTTPS uses the bundled cert (certs/) if present, else a self-signed one (see MockTls).
 builder.WebHost.ConfigureKestrel(kestrel =>
-    kestrel.ConfigureHttpsDefaults(https => https.ServerCertificate = MockTls.CreateSelfSigned()));
+    kestrel.ConfigureHttpsDefaults(https => https.ServerCertificate = MockTls.Resolve()));
 
 var app = builder.Build();
 

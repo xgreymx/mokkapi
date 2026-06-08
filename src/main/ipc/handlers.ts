@@ -12,6 +12,13 @@ import type { CertManager } from '../servers/cert-manager';
 import { importOpenApi3 } from '../importers/openapi3';
 import { exportDotnet } from '../exporters/dotnet';
 import { join } from 'path';
+import { tmpdir } from 'os';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
+import { mkdtemp, readFile, rm } from 'fs/promises';
+import type { ExportCertChoice, Service } from '../../shared/models';
+
+const execFileAsync = promisify(execFile);
 
 export function registerIpcHandlers(
   workspace:  WorkspaceManager,
@@ -203,11 +210,23 @@ export function registerIpcHandlers(
 
   // ── .NET export ──────────────────────────────────────────────────────────────
 
-  ipcMain.handle(IPC.EXPORT_SERVICE, (_e, { serviceId, options }) => {
+  ipcMain.handle(IPC.EXPORT_SERVICE, async (_e, { serviceId, options }) => {
     const svc = workspace.getService(serviceId);
     if (!svc) throw new Error(`Service '${serviceId}' not found`);
     const defaultBaseDir = join(workspace.getWorkspacePath(), 'exports');
-    return exportDotnet(svc, options, defaultBaseDir);
+    const tls = svc.protocol === 'https'
+      ? await resolveExportCert(svc, options.cert, certMgr)
+      : undefined;
+    return exportDotnet(svc, options, defaultBaseDir, tls);
+  });
+
+  ipcMain.handle(IPC.EXPORT_DETECT_DOTNET, async () => {
+    try {
+      await execFileAsync('dotnet', ['--version']);
+      return true;
+    } catch {
+      return false;
+    }
   });
 
   ipcMain.handle(IPC.EXPORT_OPEN_DIALOG, async () => {
@@ -286,4 +305,55 @@ export function registerIpcHandlers(
 
 function randomId(): string {
   return Math.random().toString(36).slice(2, 10);
+}
+
+/**
+ * Resolves the chosen export certificate to PEM cert+key material that the exporter
+ * bundles into the generated project. Returns undefined for the self-signed default
+ * (the generated app then mints its own cert at startup).
+ */
+async function resolveExportCert(
+  svc: Service,
+  choice: ExportCertChoice | undefined,
+  certMgr: CertManager,
+): Promise<{ cert: string; key: string } | undefined> {
+  switch (choice?.source ?? 'self-signed') {
+    case 'self-signed':
+      return undefined;
+    case 'mokkapi-ca': {
+      const creds = await certMgr.getOrCreateServiceCert(svc.id, svc.tls?.additionalHosts ?? []);
+      return { cert: creds.cert, key: creds.key };
+    }
+    case 'custom': {
+      if (!choice?.certPath || !choice?.keyPath) {
+        throw new Error('Select both a certificate and a private-key file for the custom option.');
+      }
+      return {
+        cert: await readFile(choice.certPath, 'utf-8'),
+        key: await readFile(choice.keyPath, 'utf-8'),
+      };
+    }
+    case 'dotnet-dev':
+      return exportDotnetDevCert();
+    default:
+      return undefined;
+  }
+}
+
+/** Exports the trusted ASP.NET Core dev certificate as PEM (cert+key) via the dotnet CLI. */
+async function exportDotnetDevCert(): Promise<{ cert: string; key: string }> {
+  const dir = await mkdtemp(join(tmpdir(), 'mokkapi-devcert-'));
+  const certPath = join(dir, 'dev.crt');
+  const keyPath = join(dir, 'dev.key'); // `--format Pem` writes the key beside it as <name>.key
+  try {
+    await execFileAsync('dotnet', [
+      'dev-certs', 'https', '--export-path', certPath, '--format', 'Pem', '--no-password',
+    ]);
+    return {
+      cert: await readFile(certPath, 'utf-8'),
+      key: await readFile(keyPath, 'utf-8'),
+    };
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 }

@@ -574,13 +574,81 @@
           </div>
 
           @if (service.protocol === 'https') {
-            <div class="rounded-lg border border-[rgb(var(--primary))/0.24] bg-[rgb(var(--primary))/0.08] px-3 py-2">
-              <p class="text-[11px] text-[rgb(var(--text-muted))]">
-                The mock serves both <span class="font-mono">http://…:{{ service.port }}</span> and
-                <span class="font-mono">https://…:{{ service.port + 1 }}</span> using a self-signed dev
-                certificate it generates itself (nothing to install). HTTPS is untrusted — call it with
-                TLS verification off (e.g. <span class="font-mono">curl -k</span>).
+            <div>
+              <label class="label">HTTPS certificate</label>
+              <p class="text-[11px] text-[rgb(var(--text-muted))] mb-1.5">
+                Serves HTTPS on <span class="font-mono">:{{ service.port + 1 }}</span> alongside HTTP. Choose the certificate to bundle.
               </p>
+              <div class="flex flex-col gap-2">
+
+                <label class="flex items-center gap-2.5 cursor-pointer rounded-lg border border-[rgb(var(--border))] px-3 py-2 surface">
+                  <input type="radio" name="exportCert" [checked]="exportCertSource() === 'self-signed'"
+                         (change)="setExportCertSource('self-signed')" />
+                  <span class="min-w-0 flex-1">
+                    <span class="block text-xs font-medium text-[rgb(var(--text))]">Self-signed <span class="text-[rgb(var(--text-xmuted))] font-normal">(default)</span></span>
+                    <span class="block text-[11px] text-[rgb(var(--text-muted))]">Generated at startup, zero setup. Untrusted — use <span class="font-mono">curl -k</span>.</span>
+                  </span>
+                  <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold flex-shrink-0 bg-[rgb(var(--bg-hover))] text-[rgb(var(--text-muted))]">dev</span>
+                </label>
+
+                <label class="flex items-center gap-2.5 cursor-pointer rounded-lg border border-[rgb(var(--border))] px-3 py-2 surface">
+                  <input type="radio" name="exportCert" [checked]="exportCertSource() === 'mokkapi-ca'"
+                         (change)="setExportCertSource('mokkapi-ca')" />
+                  <span class="min-w-0 flex-1">
+                    <span class="block text-xs font-medium text-[rgb(var(--text))]">mokkapi CA</span>
+                    <span class="block text-[11px] text-[rgb(var(--text-muted))]">Signed by mokkapi's local CA — trusted wherever that CA is installed.</span>
+                  </span>
+                  @if (caTrust.loading()) {
+                    <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold flex-shrink-0 bg-[rgb(var(--bg-hover))] text-[rgb(var(--text-muted))]">Checking…</span>
+                  } @else if (caTrust.status()?.installed) {
+                    <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold flex-shrink-0 bg-[rgb(var(--status-2xx))/0.12] text-[rgb(var(--status-2xx))]">Trusted</span>
+                  } @else if (caTrust.status()?.supported) {
+                    <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold flex-shrink-0 bg-[rgb(var(--status-4xx))/0.12] text-[rgb(var(--status-4xx))]">Not installed</span>
+                  } @else {
+                    <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold flex-shrink-0 bg-[rgb(var(--bg-hover))] text-[rgb(var(--text-muted))]">Unsupported</span>
+                  }
+                </label>
+
+                <label class="flex items-center gap-2.5 rounded-lg border border-[rgb(var(--border))] px-3 py-2 surface"
+                       [class]="dotnetAvailable() ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'">
+                  <input type="radio" name="exportCert" [disabled]="!dotnetAvailable()"
+                         [checked]="exportCertSource() === 'dotnet-dev'" (change)="setExportCertSource('dotnet-dev')" />
+                  <span class="min-w-0 flex-1">
+                    <span class="block text-xs font-medium text-[rgb(var(--text))]">.NET dev certificate</span>
+                    <span class="block text-[11px] text-[rgb(var(--text-muted))]">ASP.NET Core dev cert — trusted if you ran <span class="font-mono">dotnet dev-certs https --trust</span>.</span>
+                  </span>
+                  @if (dotnetAvailable()) {
+                    <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold flex-shrink-0 bg-[rgb(var(--status-2xx))/0.12] text-[rgb(var(--status-2xx))]">Available</span>
+                  } @else {
+                    <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold flex-shrink-0 bg-[rgb(var(--bg-hover))] text-[rgb(var(--text-muted))]">Not found</span>
+                  }
+                </label>
+
+                <label class="flex items-center gap-2.5 cursor-pointer rounded-lg border border-[rgb(var(--border))] px-3 py-2 surface">
+                  <input type="radio" name="exportCert" [checked]="exportCertSource() === 'custom'"
+                         (change)="setExportCertSource('custom')" />
+                  <span class="min-w-0 flex-1">
+                    <span class="block text-xs font-medium text-[rgb(var(--text))]">Custom certificate</span>
+                    <span class="block text-[11px] text-[rgb(var(--text-muted))]">Provide your own PEM certificate and private key.</span>
+                  </span>
+                  <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold flex-shrink-0 bg-[rgb(var(--bg-hover))] text-[rgb(var(--text-muted))]">file</span>
+                </label>
+
+                @if (exportCertSource() === 'custom') {
+                  <div class="flex flex-col gap-2 pl-3">
+                    <div class="flex items-center gap-2">
+                      <input class="input font-mono text-[11px] flex-1" readonly
+                             [value]="customCertPath() ?? 'Certificate (.pem / .crt)…'" title="{{ customCertPath() }}" />
+                      <button class="btn btn-outline btn-sm flex-shrink-0" type="button" (click)="chooseCustomCert()">Cert…</button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <input class="input font-mono text-[11px] flex-1" readonly
+                             [value]="customKeyPath() ?? 'Private key (.pem / .key)…'" title="{{ customKeyPath() }}" />
+                      <button class="btn btn-outline btn-sm flex-shrink-0" type="button" (click)="chooseCustomKey()">Key…</button>
+                    </div>
+                  </div>
+                }
+              </div>
             </div>
           }
 
@@ -624,7 +692,8 @@
             <button class="btn btn-outline btn-sm" (click)="openExportFolder()">Open folder</button>
           }
           <button class="btn btn-outline btn-sm" (click)="closeExportForm()">Close</button>
-          <button class="btn btn-sm inline-flex items-center gap-1.5" (click)="runExport()" [disabled]="!anyExportTarget() || exporting()">
+          <button class="btn btn-sm inline-flex items-center gap-1.5" (click)="runExport()"
+                  [disabled]="!anyExportTarget() || exporting() || (service.protocol === 'https' && !exportCertReady())">
             @if (exporting()) {
               <svg class="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity="0.25" stroke-width="3"></circle>
