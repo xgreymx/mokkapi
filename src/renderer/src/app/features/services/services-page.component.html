@@ -524,15 +524,17 @@
     <div class="fixed inset-0 z-50 flex items-center justify-center"
          style="background: rgba(0,0,0,0.55); backdrop-filter: blur(2px);"
          (click)="closeExportForm()">
-      <div class="card w-[28rem] p-6"
+      <div class="card w-[28rem] max-h-[85vh] flex flex-col p-0 overflow-hidden"
            (click)="$event.stopPropagation()">
-        <h2 class="font-semibold text-[15px] mb-1">Export as .NET mock</h2>
-        <p class="text-[11px] text-[rgb(var(--text-muted))] mb-4">
-          Generates a runnable .NET 10 Minimal API for
-          <span class="font-mono">{{ service.id }}</span> — run it on a headless server with no GUI.
-        </p>
+        <div class="flex-shrink-0 px-6 pt-6 pb-3">
+          <h2 class="font-semibold text-[15px] mb-1">Export as .NET mock</h2>
+          <p class="text-[11px] text-[rgb(var(--text-muted))]">
+            Generates a runnable .NET 10 Minimal API for
+            <span class="font-mono">{{ service.id }}</span> — run it on a headless server with no GUI.
+          </p>
+        </div>
 
-        <div class="flex flex-col gap-3">
+        <div class="flex flex-col gap-3 flex-1 overflow-y-auto px-6 pb-1">
           <div>
             <label class="label">Run targets</label>
             <div class="flex flex-col gap-2 mt-1">
@@ -687,7 +689,7 @@
           }
         </div>
 
-        <div class="flex justify-end gap-2 mt-5">
+        <div class="flex justify-end gap-2 flex-shrink-0 px-6 py-4 border-t border-[rgb(var(--border))]">
           @if (exportResult()) {
             <button class="btn btn-outline btn-sm" (click)="openExportFolder()">Open folder</button>
           }
