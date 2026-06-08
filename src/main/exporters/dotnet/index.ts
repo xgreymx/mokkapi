@@ -32,11 +32,14 @@ const ROUTE_PLACEHOLDER = '// __MOKKAPI_ROUTE_REGISTRATIONS__';
  * @param service The service to export.
  * @param options Run-mode targets + optional output base directory.
  * @param defaultBaseDir Fallback base dir (e.g. <workspace>/exports) when options.outputDir is unset.
+ * @param tls Resolved PEM cert+key to bundle for HTTPS. When omitted, the generated app
+ *            falls back to minting its own self-signed cert at startup.
  */
 export async function exportDotnet(
   service: Service,
   options: ExportOptions,
   defaultBaseDir: string,
+  tls?: { cert: string; key: string },
 ): Promise<ExportResult> {
   const warnings: string[] = [];
   const targets = new Set(options.targets);
@@ -55,9 +58,12 @@ export async function exportDotnet(
 
   if (service.protocol === 'https') {
     warnings.push(
-      'The generated mock serves both HTTP and HTTPS, using a self-signed dev certificate ' +
-        `it generates at startup (no cert needed). It is untrusted - call https://localhost:${httpsPort} ` +
-        'with TLS verification disabled (e.g. curl -k).',
+      tls
+        ? `The generated mock serves HTTP and HTTPS; HTTPS uses the certificate you selected, ` +
+            `bundled at src/certs/. Call it at https://localhost:${httpsPort}.`
+        : 'The generated mock serves both HTTP and HTTPS, using a self-signed dev certificate ' +
+            `it generates at startup (no cert needed). It is untrusted - call https://localhost:${httpsPort} ` +
+            'with TLS verification disabled (e.g. curl -k).',
     );
   }
   if (service.endpoints.length === 0) {
@@ -98,6 +104,18 @@ export async function exportDotnet(
     files.push({ path: join(outputPath, 'publish-selfcontained.sh'), content: applyTokens(publishScript, tokens) });
   }
   // 'framework' needs no extra files - covered by the project itself + README.
+
+  // Bundle the chosen HTTPS certificate so it ships with the project (MockTls loads it,
+  // else falls back to a runtime self-signed cert). Lives under src/ so the csproj
+  // copy-to-output rule and the Docker `COPY src/` both carry it into the build.
+  if (tls) {
+    const certsDir = join(srcDir, 'certs');
+    await mkdir(certsDir, { recursive: true });
+    files.push(
+      { path: join(certsDir, 'server.crt'), content: tls.cert },
+      { path: join(certsDir, 'server.key'), content: tls.key },
+    );
+  }
 
   await Promise.all(files.map((f) => writeFile(f.path, f.content, 'utf-8')));
 

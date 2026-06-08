@@ -11,7 +11,7 @@ import { CertificateTrustService } from '../../data/certificate-trust.service';
 import { WorkspaceStore } from '../../data/workspace.store';
 import { IpcService } from '../../ipc/ipc.service';
 import { EndpointEditorComponent } from './endpoint-editor.component';
-import type { Endpoint, ExportResult, ExportTarget, IisIntegrationStatus, ServiceProtocol } from '@shared/models';
+import type { Endpoint, ExportCertChoice, ExportCertSource, ExportResult, ExportTarget, IisIntegrationStatus, ServiceProtocol } from '@shared/models';
 
 @Component({
   selector: 'app-services-page',
@@ -66,6 +66,15 @@ export class ServicesPageComponent implements OnDestroy {
   protected readonly exportError = signal<string | null>(null);
   protected readonly anyExportTarget = computed(() =>
     Object.values(this.exportTargets()).some(Boolean),
+  );
+  // HTTPS certificate selection (only relevant when the service uses https).
+  protected readonly exportCertSource = signal<ExportCertSource>('self-signed');
+  protected readonly customCertPath = signal<string | null>(null);
+  protected readonly customKeyPath = signal<string | null>(null);
+  protected readonly dotnetAvailable = signal(false);
+  /** The 'custom' source needs both files before export can run. */
+  protected readonly exportCertReady = computed(() =>
+    this.exportCertSource() !== 'custom' || (!!this.customCertPath() && !!this.customKeyPath()),
   );
 
   private servicesRailPeekTimer: ReturnType<typeof setTimeout> | null = null;
@@ -434,11 +443,19 @@ export class ServicesPageComponent implements OnDestroy {
   // ── .NET export ────────────────────────────────────────────────────────────
 
   protected openExportForm(): void {
-    if (!this.store.selectedService()) return;
+    const svc = this.store.selectedService();
+    if (!svc) return;
     this.exportResult.set(null);
     this.exportError.set(null);
     this.exportOutputDir.set(null);
+    this.exportCertSource.set('self-signed');
+    this.customCertPath.set(null);
+    this.customKeyPath.set(null);
     this.showExportForm.set(true);
+    if (svc.protocol === 'https') {
+      void this.caTrust.refresh();
+      void this.ipc.detectDotnet().then((ok) => this.dotnetAvailable.set(ok));
+    }
   }
 
   protected closeExportForm(): void {
@@ -449,6 +466,26 @@ export class ServicesPageComponent implements OnDestroy {
     this.exportTargets.update((prev) => ({ ...prev, [target]: !prev[target] }));
   }
 
+  protected setExportCertSource(source: ExportCertSource): void {
+    this.exportCertSource.set(source);
+  }
+
+  protected async chooseCustomCert(): Promise<void> {
+    const path = await this.ipc.openFileDialog({
+      title: 'Select the HTTPS certificate (PEM)',
+      filters: [{ name: 'Certificate', extensions: ['pem', 'crt', 'cer'] }],
+    });
+    if (path) this.customCertPath.set(path);
+  }
+
+  protected async chooseCustomKey(): Promise<void> {
+    const path = await this.ipc.openFileDialog({
+      title: 'Select the private key (PEM)',
+      filters: [{ name: 'Private key', extensions: ['pem', 'key'] }],
+    });
+    if (path) this.customKeyPath.set(path);
+  }
+
   protected async chooseExportOutputDir(): Promise<void> {
     const dir = await this.ipc.openExportDialog();
     if (dir) this.exportOutputDir.set(dir);
@@ -456,11 +493,26 @@ export class ServicesPageComponent implements OnDestroy {
 
   protected async runExport(): Promise<void> {
     const serviceId = this.store.selectedServiceId();
-    if (!serviceId || !this.anyExportTarget() || this.exporting()) return;
+    const svc = this.store.selectedService();
+    if (!serviceId || !svc || !this.anyExportTarget() || this.exporting()) return;
 
     const targets = (Object.keys(this.exportTargets()) as ExportTarget[]).filter(
       (t) => this.exportTargets()[t],
     );
+
+    let cert: ExportCertChoice | undefined;
+    if (svc.protocol === 'https') {
+      const source = this.exportCertSource();
+      if (source === 'custom') {
+        if (!this.customCertPath() || !this.customKeyPath()) {
+          this.exportError.set('Select both a certificate and a private key for the custom option.');
+          return;
+        }
+        cert = { source, certPath: this.customCertPath()!, keyPath: this.customKeyPath()! };
+      } else {
+        cert = { source };
+      }
+    }
 
     this.exporting.set(true);
     this.exportResult.set(null);
@@ -469,6 +521,7 @@ export class ServicesPageComponent implements OnDestroy {
       const result = await this.ipc.exportService(serviceId, {
         targets,
         outputDir: this.exportOutputDir() ?? undefined,
+        cert,
       });
       this.exportResult.set(result);
     } catch (error: unknown) {

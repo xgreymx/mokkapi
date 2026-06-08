@@ -198,11 +198,24 @@ export interface ImportResult {
 /** Which run-mode artifacts to emit alongside the generated .NET project */
 export type ExportTarget = 'selfcontained' | 'docker' | 'framework';
 
+/** Which certificate the generated HTTPS mock should use (only relevant for https services). */
+export type ExportCertSource = 'self-signed' | 'mokkapi-ca' | 'dotnet-dev' | 'custom';
+
+export interface ExportCertChoice {
+  source: ExportCertSource;
+  /** PEM certificate file — 'custom' only. */
+  certPath?: string;
+  /** PEM private-key file — 'custom' only. */
+  keyPath?: string;
+}
+
 export interface ExportOptions {
   /** Run targets to scaffold helper files for. The project itself supports all three. */
   targets: ExportTarget[];
   /** Output directory. When omitted, defaults to <workspace>/exports/<service-id>. */
   outputDir?: string;
+  /** Certificate to bundle for HTTPS. Ignored for http services; defaults to self-signed. */
+  cert?: ExportCertChoice;
 }
 
 export interface ExportResult {

@@ -5,12 +5,26 @@ using System.Security.Cryptography.X509Certificates;
 namespace MokkapiMock;
 
 /// <summary>
-/// Dev-only TLS: generates an in-memory self-signed cert for localhost at startup so
-/// HTTPS works in every run mode with no certificate to provide, mount or install.
-/// It is self-signed, so clients must skip verification (e.g. curl -k).
+/// TLS for the mock. If a certificate was bundled at export time (certs/server.crt +
+/// server.key, next to the app), it is used; otherwise an in-memory self-signed cert is
+/// generated at startup so HTTPS still works with nothing to install (untrusted - curl -k).
 /// </summary>
 internal static class MockTls
 {
+    /// <summary>Returns the bundled certificate if present, else a fresh self-signed one.</summary>
+    public static X509Certificate2 Resolve()
+    {
+        var certPath = Path.Combine(AppContext.BaseDirectory, "certs", "server.crt");
+        var keyPath = Path.Combine(AppContext.BaseDirectory, "certs", "server.key");
+        if (File.Exists(certPath) && File.Exists(keyPath))
+        {
+            using var pem = X509Certificate2.CreateFromPemFile(certPath, keyPath);
+            // Round-trip through PKCS#12 so Kestrel gets a usable private key on every platform.
+            return X509CertificateLoader.LoadPkcs12(pem.Export(X509ContentType.Pfx), null);
+        }
+        return CreateSelfSigned();
+    }
+
     /// <summary>Self-signed cert for localhost + loopback, valid for the process lifetime.</summary>
     public static X509Certificate2 CreateSelfSigned()
     {

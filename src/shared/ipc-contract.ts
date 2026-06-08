@@ -73,9 +73,10 @@ export const IPC = {
   OPEN_IMPORT_DIALOG:  'import:open-dialog', // returns picked file path
 
   // .NET export
-  EXPORT_SERVICE:      'export:generate',
-  EXPORT_OPEN_DIALOG:  'export:open-dialog', // returns picked output directory
-  OPEN_EXPORT_FOLDER:  'export:open-folder',
+  EXPORT_SERVICE:       'export:generate',
+  EXPORT_OPEN_DIALOG:   'export:open-dialog', // returns picked output directory
+  OPEN_EXPORT_FOLDER:   'export:open-folder',
+  EXPORT_DETECT_DOTNET: 'export:detect-dotnet', // returns whether the dotnet CLI is available
 
   // Built-in test client
   SEND_REQUEST: 'test-client:send',
@@ -149,6 +150,7 @@ export interface MokkApiElectron {
   exportService(serviceId: string, options: ExportOptions): Promise<ExportResult>;
   openExportDialog(): Promise<string | null>; // returns picked output directory or null
   openExportFolder(folderPath: string): Promise<void>;
+  detectDotnet(): Promise<boolean>; // whether the `dotnet` CLI is on PATH
 
   // Test client
   sendRequest(req: TestRequest): Promise<TestResponse>;

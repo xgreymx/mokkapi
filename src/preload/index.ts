@@ -65,6 +65,7 @@ const mokkapi: MokkApiElectron = {
     ipcRenderer.invoke(IPC.EXPORT_SERVICE, { serviceId, options }),
   openExportDialog: () => ipcRenderer.invoke(IPC.EXPORT_OPEN_DIALOG),
   openExportFolder: (folderPath) => ipcRenderer.invoke(IPC.OPEN_EXPORT_FOLDER, folderPath),
+  detectDotnet: () => ipcRenderer.invoke(IPC.EXPORT_DETECT_DOTNET),
 
   // ── Test client ────────────────────────────────────────────────────────────
   sendRequest: (req) => ipcRenderer.invoke(IPC.SEND_REQUEST, req),

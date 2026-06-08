@@ -15,4 +15,11 @@
     <PackageReference Include="Bogus" Version="35.6.1" />
   </ItemGroup>
 
+  <!-- Ship a bundled HTTPS certificate (when one was selected at export) next to the app.
+       `Update` (not Include) sets copy metadata on the SDK's default-globbed items, so it
+       never duplicates them and matches nothing harmlessly when no cert was bundled. -->
+  <ItemGroup>
+    <None Update="certs/**/*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

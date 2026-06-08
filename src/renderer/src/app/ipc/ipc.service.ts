@@ -115,6 +115,7 @@ export class IpcService {
   }
   openExportDialog(): Promise<string | null> { return api().openExportDialog(); }
   openExportFolder(folderPath: string): Promise<void> { return api().openExportFolder(folderPath); }
+  detectDotnet(): Promise<boolean> { return api().detectDotnet(); }
 
   // ── Test client ────────────────────────────────────────────────────────────
   sendRequest(req: TestRequest): Promise<TestResponse> { return api().sendRequest(req); }
