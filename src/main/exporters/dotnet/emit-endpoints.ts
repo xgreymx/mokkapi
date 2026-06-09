@@ -33,6 +33,13 @@ export function emitEndpoints(service: Service): EmittedEndpoints {
     }
     seenRoutes.add(routeKey);
 
+    if (ep.variants.length === 0) {
+      warnings.push(
+        `Endpoint ${ep.method} ${ep.path} has no response variants - it will always answer 501 no_match ` +
+          `(same as the desktop app). Add a variant with a response and re-export.`,
+      );
+    }
+
     const ident = uniqueIdent(ep, usedIdents);
     fields.push(emitEndpointField(ident, ep, route));
     routes.push(
